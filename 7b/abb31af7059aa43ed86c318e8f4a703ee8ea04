@@ -1,0 +1,66 @@
+.github/zizmor.yml
+  s_4205d8fce0446c::t_2c042fcd1b55bd 1-8
+.github/workflows/lint-ga.yml
+  s_4205d8fce0446c::t_91d8ee3ed948ba 1-35
+.github/workflows/npm-publish.yml
+  s_4205d8fce0446c::t_b35800ca460144 22-24,26,29-32,35
+npm/package.json
+  s_4205d8fce0446c::t_91984008b43884 16-18,21-22,24-25
+  h_74546f1f1ded3e 3
+.n-cursor.json
+  h_74546f1f1ded3e 4
+bunfig.toml
+  s_4205d8fce0446c::t_9d9af8b726c8aa 1-2
+.vscode/extensions.json
+  s_4205d8fce0446c::t_1895214a0d6d50 2-11
+eslint.config.js
+  s_4205d8fce0446c::t_9cd6651560c435 5-6,15
+npm/jsconfig.json
+  s_4205d8fce0446c::t_639de302f7663b 1-10
+.oxlintrc.json
+  s_4205d8fce0446c::t_45383b47859eca 3-4,7,386
+.github/workflows/git-ai.yml
+  s_4205d8fce0446c::t_85dbccd561c997 1-30
+hk.pkl
+  s_4205d8fce0446c::t_5d2220b9f7e4b9 1-15
+.vscode/settings.json
+  s_4205d8fce0446c::t_65b7df9b545d65 3-56
+.markdownlint-cli2.jsonc
+  s_4205d8fce0446c::t_c0bf3074022189 1-10
+package.json
+  s_4205d8fce0446c::t_0065643310ca31 10-13,15,17-23
+  s_4205d8fce0446c::t_dac304b993ca6e 14
+.github/workflows/clean-ga-workflows.yml
+  s_4205d8fce0446c::t_19accdaa76e70e 1-26
+.github/workflows/lint-js.yml
+  s_4205d8fce0446c::t_345c8b20bde5bb 1-43
+npm/types/index.d.ts
+  s_4205d8fce0446c::t_aa85552b8d3a9f 1
+.v8rignore
+  s_4205d8fce0446c::t_b4f5b0e5a430b5 1-3
+.github/workflows/clean-merged-branch.yml
+  s_4205d8fce0446c::t_1871f948d5eddc 1,9-13,18-19,21-23,26-27,29-34
+.github/workflows/lint-text.yml
+  s_4205d8fce0446c::t_eb115e6a6c23ef 1-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "7babb31af7059aa43ed86c318e8f4a703ee8ea04",
+  "prompts": {},
+  "humans": {
+    "h_74546f1f1ded3e": {
+      "author": "vitaliytv <v@nitra.ai>"
+    }
+  },
+  "sessions": {
+    "s_4205d8fce0446c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d378d31b-990b-4fb4-a544-ec1035382ddb",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
