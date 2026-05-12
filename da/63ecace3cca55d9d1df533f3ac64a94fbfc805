@@ -1,0 +1,37 @@
+.n-cursor.json
+  s_4205d8fce0446c::t_6779b7f046359c 3-4
+.jscpd.json
+  s_4205d8fce0446c::t_6092b32bcca5fa 1-7
+.gitignore
+  s_4205d8fce0446c::t_24391384f7f94a 20-21
+bun.lock
+  ai_agent 8,10,15,19-100,107-200,205-206,209-218,261-306,309,311,313-1107
+npm/README.md
+  s_4205d8fce0446c::t_6779b7f046359c 1
+package.json
+  s_4205d8fce0446c::t_6779b7f046359c 22-23
+.cspell.json
+  s_4205d8fce0446c::t_6779b7f046359c 18
+npm/src/schema.js
+  s_4205d8fce0446c::t_c7c833645749f7 1
+npm/package.json
+  s_4205d8fce0446c::t_6779b7f046359c 24-25
+.github/workflows/git-ai.yml
+  s_4205d8fce0446c::t_955798a202d65d 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "da63ecace3cca55d9d1df533f3ac64a94fbfc805",
+  "prompts": {},
+  "sessions": {
+    "s_4205d8fce0446c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d378d31b-990b-4fb4-a544-ec1035382ddb",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
