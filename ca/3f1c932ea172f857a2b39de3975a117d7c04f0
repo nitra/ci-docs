@@ -1,0 +1,37 @@
+npm/test/sync-schema/main.test.mjs
+  s_0a67f0dba4c44d::t_01ba6f29894255 14
+npm/test/commit-push/main.test.mjs
+  s_0a67f0dba4c44d::t_d4e0bc4785fdc0 6
+npm/CHANGELOG.md
+  s_0a67f0dba4c44d::t_c9bad5706513b3 7,11-25
+npm/package.json
+  s_0a67f0dba4c44d::t_d251b801a17ffd 3
+npm/src/commit-push/main.mjs
+  s_0a67f0dba4c44d::t_c2047346ed80a0 1-101
+npm/src/sync-schema/main.mjs
+  s_0a67f0dba4c44d::t_45b4c1ea1f05ff 218,221
+  s_0a67f0dba4c44d::t_593876bd393705 237
+  s_0a67f0dba4c44d::t_2ce24547a21e59 52,55,60,62
+  s_0a67f0dba4c44d::t_7253d5be943330 251-252,254-259,268-269,272,278-280,283-284,289
+npm/src/cli.mjs
+  s_0a67f0dba4c44d::t_434a9b5d05a434 8-9
+  s_0a67f0dba4c44d::t_55017eeb0c4bb8 13-14
+docs/adr/_inbox/20260512-123313-d378d31b.md
+  s_0a67f0dba4c44d::t_ab2f2beda24f5d 1-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "ca3f1c932ea172f857a2b39de3975a117d7c04f0",
+  "prompts": {},
+  "sessions": {
+    "s_0a67f0dba4c44d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e8f3b703-34d9-4957-af4c-518435f94ac6",
+        "model": "unknown"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
