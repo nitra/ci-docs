@@ -7,8 +7,8 @@
     "npm"
   ],
   "type": "module",
-  "scripts": {
-  },
+  "scripts": {},
   "devDependencies": {
+    "@nitra/cursor": "^1.9.4"
   }
 }
