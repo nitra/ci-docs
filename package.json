@@ -7,8 +7,19 @@
     "npm"
   ],
   "type": "module",
-  "scripts": {},
+  "scripts": {
+    "lint": "bun run lint-ga && bun run lint-js && bun run lint-text && oxfmt .",
+    "lint-ga": "n-cursor lint-ga",
+    "lint-js": "bunx oxlint --fix && bunx eslint --fix . && bunx jscpd .",
+    "lint-text": "npx cspell . && bun ./node_modules/@nitra/cursor/scripts/run-shellcheck-text.mjs && bunx markdownlint-cli2 --fix \"**/*.md\" \"**/*.mdc\" && bun ./node_modules/@nitra/cursor/scripts/run-v8r.mjs"
+  },
   "devDependencies": {
-    "@nitra/cursor": "^1.9.4"
+    "@nitra/cspell-dict": "^2.1.0",
+    "@nitra/cursor": "^1.9.4",
+    "@nitra/eslint-config": "^3.9.2"
+  },
+  "engines": {
+    "node": ">=24",
+    "bun": ">=1.3"
   }
 }

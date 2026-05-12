@@ -1,3 +1,12 @@
 {
-  "recommendations": ["Vue.volar", "oxc.oxc-vscode"]
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "github.vscode-github-actions",
+    "oxc.oxc-vscode",
+    "DavidAnson.vscode-markdownlint",
+    "timonwong.shellcheck",
+    "redhat.vscode-yaml",
+    "irongeek.vscode-env",
+    "Vue.volar"
+  ]
 }

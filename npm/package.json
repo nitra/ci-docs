@@ -1,6 +1,6 @@
 {
   "name": "@nitra/ci-docs",
-  "version": "2.12.0",
+  "version": "0.0.1",
   "description": "Nitra ci-docs wrapper",
   "homepage": "https://github.com/nitra/ci-docs",
   "bugs": {
@@ -13,12 +13,15 @@
     "url": "git+https://github.com/nitra/ci-docs.git"
   },
   "files": [
-    "src"
+    "src",
+    "types",
+    "CHANGELOG.md"
   ],
   "type": "module",
-  "dependencies": {
-  },
+  "types": "./types/index.d.ts",
+  "dependencies": {},
   "engines": {
-    "node": ">=40"
+    "node": ">=24",
+    "bun": ">=1.3"
   }
 }

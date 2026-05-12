@@ -1,0 +1,15 @@
+amends "package://github.com/jdx/hk/releases/download/v1.6.0/hk@1.6.0#/Config.pkl"
+
+import "package://github.com/jdx/hk/releases/download/v1.6.0/hk@1.6.0#/Builtins.pkl"
+
+`hooks` {
+  ["pre-commit"] {
+    `steps` {
+      ["tsc"] {
+        glob = List("npm/src/**/*.js")
+        dir = "npm"
+        check = "bunx -p typescript tsc src/**/*.js --declaration --allowJs --emitDeclarationOnly --outDir types --skipLibCheck"
+      }
+    }
+  }
+}

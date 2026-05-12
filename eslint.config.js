@@ -2,6 +2,9 @@ import { getConfig } from '@nitra/eslint-config'
 
 export default [
   {
+    ignores: ['**/auto-imports.d.ts']
+  },
+  {
     languageOptions: {
       globals: {
         __GITHUB_SHA__: 'readonly',
@@ -9,5 +12,5 @@ export default [
       }
     }
   },
-  ...getConfig({ node: ['npm', 'vue', 'demo/node'] })
+  ...getConfig({ node: ['npm'] })
 ]

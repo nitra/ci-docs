@@ -1,8 +1,10 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["unicorn", "oxc", "import", "jsdoc", "promise", "node"],
+  "plugins": ["unicorn", "oxc", "import", "jsdoc", "promise", "node", "vue"],
+  "jsPlugins": ["@e18e/eslint-plugin"],
   "categories": {},
   "rules": {
+    "e18e/prefer-includes": "error",
     "array-callback-return": "deny",
     "no-new-wrappers": "deny",
     "import/no-named-as-default": "deny",
@@ -182,7 +184,6 @@
     "no-useless-escape": "deny",
     "react/no-string-refs": "deny",
     "unicorn/no-empty-file": "deny",
-    "no-continue": "off",
     "no-void": "deny",
     "unicorn/no-invalid-remove-event-listener": "deny",
     "react/prefer-es6-class": "deny",
@@ -382,5 +383,5 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": []
+  "ignorePatterns": ["**/schema.graphql", "**/auto-imports.d.ts"]
 }

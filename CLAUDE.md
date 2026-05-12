@@ -1,7 +1,9 @@
 <!-- Цей файл генерується автоматично через `npx @nitra/cursor`. Не редагуй вручну. -->
 
+@.cursor/rules/n-adr.mdc
 @.cursor/rules/n-bun.mdc
 @.cursor/rules/n-changelog.mdc
+@.cursor/rules/n-ci4.mdc
 @.cursor/rules/n-ga.mdc
 @.cursor/rules/n-image-compress.mdc
 @.cursor/rules/n-js-lint.mdc
