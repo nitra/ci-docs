@@ -1,0 +1,10 @@
+type Query {
+  hello: String
+  newField: Int
+}
+
+type User {
+  id: ID!
+  name: String
+  email: String
+}

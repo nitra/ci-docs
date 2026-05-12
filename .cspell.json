@@ -10,10 +10,6 @@
     "report",
     "yarn.lock"
   ],
-  "import": [
-    "@nitra/cspell-dict/cspell-ext.json",
-    "@cspell/dict-ru_ru/cspell-ext.json",
-    "@cspell/dict-uk-ua/cspell-ext.json"
-  ],
-  "words": []
+  "import": ["@nitra/cspell-dict/cspell-ext.json"],
+  "words": ["conftest", "коміт", "підвантажується", "промпта", "rego", "taze", "воркспейсів"]
 }
