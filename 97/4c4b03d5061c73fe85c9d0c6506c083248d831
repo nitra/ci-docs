@@ -1,0 +1,14 @@
+npm/package.json
+  h_74546f1f1ded3e 15-17,25-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "974c4b03d5061c73fe85c9d0c6506c083248d831",
+  "prompts": {},
+  "humans": {
+    "h_74546f1f1ded3e": {
+      "author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
