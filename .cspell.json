@@ -1,0 +1,21 @@
+{
+  "version": "0.2",
+  "language": "en,uk,ru-ru,nitra",
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/vscode-extension/**",
+    "**/.git/**",
+    "**/test/**",
+    ".vscode",
+    "report",
+    "yarn.lock"
+  ],
+  "import": [
+    "@nitra/cspell-dict/cspell-ext.json",
+    "@cspell/dict-ru_ru/cspell-ext.json",
+    "@cspell/dict-uk-ua/cspell-ext.json"
+  ],
+  "words": [
+
+  ]
+}

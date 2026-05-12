@@ -1,0 +1,24 @@
+{
+  "name": "@nitra/ci-docs",
+  "version": "2.12.0",
+  "description": "Nitra ci-docs wrapper",
+  "homepage": "https://github.com/nitra/ci-docs",
+  "bugs": {
+    "url": "https://github.com/nitra/ci-docs/issues"
+  },
+  "license": "ISC",
+  "author": "v@nitra.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitra/ci-docs.git"
+  },
+  "files": [
+    "src"
+  ],
+  "type": "module",
+  "dependencies": {
+  },
+  "engines": {
+    "node": ">=40"
+  }
+}
