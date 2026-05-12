@@ -3,12 +3,19 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildSchema, graphqlSync } from 'graphql'
-import { classifyChanges, cli, formatChangelogBlock, main, prependChangelog, runInspector } from './main.mjs'
+import {
+  classifyChanges,
+  cli,
+  formatChangelogBlock,
+  main,
+  parseHeader,
+  prependChangelog,
+  runInspector
+} from '../../src/sync-schema/main.mjs'
 
 const HEADER = `# Changelog\n\nУсі помітні зміни цього пакета документуються тут.\n\nФормат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/), нумерація — [SemVer](https://semver.org/lang/uk/).\n\n`
 const OLD_SDL = readFileSync(join(import.meta.dir, '__fixtures__/old-schema.graphql'), 'utf8')
 const NEW_SDL = readFileSync(join(import.meta.dir, '__fixtures__/new-schema.graphql'), 'utf8')
-const NEW_SCHEMA_PATH = join(import.meta.dir, '__fixtures__/new-schema.graphql')
 
 describe('classifyChanges', () => {
   it('повертає bump=null коли немає змін', () => {
@@ -51,13 +58,14 @@ describe('classifyChanges', () => {
 })
 
 describe('formatChangelogBlock', () => {
-  const baseInput = { version: '0.1.0', date: '2026-05-11', dbSha: 'a1b2c3d', sections: { added: [], removed: [], changed: [] } }
+  const baseInput = { version: '0.1.0', date: '2026-05-11', sourceRef: 'db@a1b2c3d', sections: { added: [], removed: [], changed: [] } }
 
-  it('завжди містить "Changed" з посиланням на db-SHA', () => {
+  it('завжди містить "Changed" з sourceRef', () => {
     const out = formatChangelogBlock(baseInput)
     expect(out).toContain('## [0.1.0] - 2026-05-11')
     expect(out).toContain('### Changed')
-    expect(out).toContain('Оновлено GraphQL-схему з Hasura (`db@a1b2c3d`)')
+    expect(out).toContain('Оновлено GraphQL-схему (`db@a1b2c3d`)')
+    expect(out).not.toContain('Hasura')
   })
 
   it('додає секцію Removed для breaking-видалень', () => {
@@ -82,6 +90,7 @@ describe('formatChangelogBlock', () => {
     const out = formatChangelogBlock({ ...baseInput, first: true })
     expect(out).toContain('Початкове додавання GraphQL-схеми')
     expect(out).not.toContain('Оновлено GraphQL-схему')
+    expect(out).not.toContain('Hasura')
   })
 
   it('закінчується одним порожнім рядком (для коректного prepend)', () => {
@@ -132,6 +141,24 @@ describe('prependChangelog', () => {
   })
 })
 
+describe('parseHeader', () => {
+  it('парсить "Key: Value" → [key, value]', () => {
+    expect(parseHeader('X-Hasura-Admin-Secret: super-secret')).toEqual(['X-Hasura-Admin-Secret', 'super-secret'])
+  })
+
+  it('обрізає пробіли з обох боків', () => {
+    expect(parseHeader('  Authorization  :   Bearer token  ')).toEqual(['Authorization', 'Bearer token'])
+  })
+
+  it('зберігає двокрапки у value (Bearer scheme не ламається)', () => {
+    expect(parseHeader('Authorization: Bearer abc:def:ghi')).toEqual(['Authorization', 'Bearer abc:def:ghi'])
+  })
+
+  it('кидає помилку без двокрапки', () => {
+    expect(() => parseHeader('not-a-header')).toThrow(/Invalid --header/)
+  })
+})
+
 describe('main (e2e via fixtures)', () => {
   let tmp
 
@@ -154,8 +181,7 @@ describe('main (e2e via fixtures)', () => {
 
   it('BREAKING зміна (видалення поля) → bump minor, CHANGELOG.Removed, schema оновлено', async () => {
     const { docsRoot, npmDir } = setupTmpDocs()
-    const result = await main({ newSdl: NEW_SDL, docsRoot, dbSha: 'abc1234567', date: '2026-05-11' })
-    console.log(JSON.stringify(result, null, 2))
+    const result = await main({ newSdl: NEW_SDL, docsRoot, sourceRef: 'db@abc1234', date: '2026-05-11' })
 
     expect(result.changed).toBe(true)
     expect(result.bump).toBe('minor')
@@ -165,6 +191,7 @@ describe('main (e2e via fixtures)', () => {
     expect(changelog).toContain('## [0.1.0] - 2026-05-11')
     expect(changelog).toContain('### Removed')
     expect(changelog).toContain('deprecated_field')
+    expect(changelog).toContain('db@abc1234')
     expect(changelog.indexOf('## [0.1.0]')).toBeLessThan(changelog.indexOf('## [0.0.2]'))
 
     const schema = readFileSync(join(npmDir, 'schema/maya.graphql'), 'utf8')
@@ -173,8 +200,7 @@ describe('main (e2e via fixtures)', () => {
 
   it('однакові схеми → changed=false, нічого не записує', async () => {
     const { docsRoot, npmDir } = setupTmpDocs()
-    const result = await main({ newSdl: OLD_SDL, docsRoot, dbSha: 'abc1234567', date: '2026-05-11' })
-    console.log(JSON.stringify(result, null, 2))
+    const result = await main({ newSdl: OLD_SDL, docsRoot, sourceRef: 'db@abc1234', date: '2026-05-11' })
 
     expect(result.changed).toBe(false)
     expect(result.bump).toBeNull()
@@ -185,8 +211,7 @@ describe('main (e2e via fixtures)', () => {
 
   it('first-run (нема старої схеми) → bump patch, CHANGELOG з "Початкове додавання"', async () => {
     const { docsRoot, npmDir } = setupTmpDocs({ withOldSchema: false })
-    const result = await main({ newSdl: NEW_SDL, docsRoot, dbSha: 'abc1234567', date: '2026-05-11' })
-    console.log(JSON.stringify(result, null, 2))
+    const result = await main({ newSdl: NEW_SDL, docsRoot, sourceRef: 'db@abc1234', date: '2026-05-11' })
 
     expect(result.changed).toBe(true)
     expect(result.bump).toBe('patch')
@@ -199,7 +224,13 @@ describe('main (e2e via fixtures)', () => {
 
   it('кастомний schemaFilename (smart.graphql) — записує саме його', async () => {
     const { docsRoot, npmDir } = setupTmpDocs({ schemaFilename: 'smart.graphql' })
-    const result = await main({ newSdl: NEW_SDL, docsRoot, dbSha: 'abc1234567', date: '2026-05-11', schemaFilename: 'smart.graphql' })
+    const result = await main({
+      newSdl: NEW_SDL,
+      docsRoot,
+      sourceRef: 'db@abc1234',
+      date: '2026-05-11',
+      schemaFilename: 'smart.graphql'
+    })
 
     expect(result.changed).toBe(true)
     expect(existsSync(join(npmDir, 'schema/smart.graphql'))).toBe(true)
@@ -221,7 +252,7 @@ describe('cli (тільки args)', () => {
     return tmp
   }
 
-  function startMockHasura(sdl) {
+  function startMockGraphql(sdl) {
     const schema = buildSchema(sdl)
     server = Bun.serve({
       port: 0,
@@ -244,54 +275,78 @@ describe('cli (тільки args)', () => {
     if (tmp && existsSync(tmp)) rmSync(tmp, { recursive: true, force: true })
   })
 
-  it('інтроспектить Hasura через --hasura-url і синкає схему', async () => {
+  it('інтроспектить через --endpoint і синкає схему', async () => {
     const docsRoot = setupBareDocs()
-    const url = startMockHasura(NEW_SDL)
-    const result = await cli(['--hasura-url', url, '--docs', docsRoot, '--schema-name', 'test.graphql', '--db-sha', 'abcdef1234'])
+    const url = startMockGraphql(NEW_SDL)
+    const result = await cli([
+      '--endpoint', url,
+      '--docs', docsRoot,
+      '--schema-name', 'test.graphql',
+      '--source-ref', 'db@abcdef1'
+    ])
 
     expect(result.changed).toBe(true)
     expect(result.bump).toBe('patch')
     expect(existsSync(join(docsRoot, 'npm', 'schema', 'test.graphql'))).toBe(true)
   })
 
-  it('передає --hasura-secret як X-Hasura-Admin-Secret заголовок', async () => {
+  it('одиничний --header проходить як HTTP-заголовок', async () => {
     const docsRoot = setupBareDocs()
-    const url = startMockHasura(NEW_SDL)
-    await cli(['--hasura-url', url, '--hasura-secret', 'super-secret', '--docs', docsRoot])
+    const url = startMockGraphql(NEW_SDL)
+    await cli([
+      '--endpoint', url,
+      '--header', 'X-Hasura-Admin-Secret: super-secret',
+      '--docs', docsRoot
+    ])
 
     expect(receivedHeaders.get('x-hasura-admin-secret')).toBe('super-secret')
   })
 
-  it('без --hasura-secret заголовок не надсилається', async () => {
+  it('кілька --header підтримуються (Authorization + X-Custom)', async () => {
     const docsRoot = setupBareDocs()
-    const url = startMockHasura(NEW_SDL)
-    await cli(['--hasura-url', url, '--docs', docsRoot])
+    const url = startMockGraphql(NEW_SDL)
+    await cli([
+      '--endpoint', url,
+      '--header', 'Authorization: Bearer abc:def',
+      '--header', 'X-Tenant: org-42',
+      '--docs', docsRoot
+    ])
+
+    expect(receivedHeaders.get('authorization')).toBe('Bearer abc:def')
+    expect(receivedHeaders.get('x-tenant')).toBe('org-42')
+  })
+
+  it('без --header жодних кастомних заголовків не йде', async () => {
+    const docsRoot = setupBareDocs()
+    const url = startMockGraphql(NEW_SDL)
+    await cli(['--endpoint', url, '--docs', docsRoot])
 
     expect(receivedHeaders.get('x-hasura-admin-secret')).toBeNull()
+    expect(receivedHeaders.get('authorization')).toBeNull()
   })
 
   it('схема за замовчуванням — maya.graphql', async () => {
     const docsRoot = setupBareDocs()
-    const url = startMockHasura(NEW_SDL)
-    await cli(['--hasura-url', url, '--docs', docsRoot])
+    const url = startMockGraphql(NEW_SDL)
+    await cli(['--endpoint', url, '--docs', docsRoot])
 
     expect(existsSync(join(docsRoot, 'npm', 'schema', 'maya.graphql'))).toBe(true)
   })
 
-  it('викидає якщо не передано ні --new-schema ні --hasura-url', () => {
-    expect(cli(['--docs', '/tmp/nowhere'])).rejects.toThrow('--new-schema or --hasura-url is required')
-  })
-
-  it('викидає якщо передано обидва --new-schema і --hasura-url', () => {
-    expect(cli(['--new-schema', '/tmp/a.graphql', '--hasura-url', 'http://x'])).rejects.toThrow(
-      '--new-schema and --hasura-url are mutually exclusive'
-    )
-  })
-
-  it('запускає main через --new-schema (без мережі)', async () => {
+  it('sourceRef за замовчуванням "unknown" і потрапляє в CHANGELOG (не-first-run)', async () => {
     const docsRoot = setupBareDocs()
-    const result = await cli(['--new-schema', NEW_SCHEMA_PATH, '--docs', docsRoot, '--schema-name', 'file.graphql', '--db-sha', 'deadbeef'])
-    expect(result.changed).toBe(true)
-    expect(existsSync(join(docsRoot, 'npm', 'schema', 'file.graphql'))).toBe(true)
+    // seed old schema so the run isn't a first-run
+    mkdirSync(join(docsRoot, 'npm', 'schema'))
+    writeFileSync(join(docsRoot, 'npm', 'schema', 'maya.graphql'), OLD_SDL)
+
+    const url = startMockGraphql(NEW_SDL)
+    await cli(['--endpoint', url, '--docs', docsRoot])
+
+    const changelog = readFileSync(join(docsRoot, 'npm', 'CHANGELOG.md'), 'utf8')
+    expect(changelog).toContain('(`unknown`)')
+  })
+
+  it('викидає якщо не передано --endpoint', () => {
+    expect(cli(['--docs', '/tmp/nowhere'])).rejects.toThrow('--endpoint is required')
   })
 })

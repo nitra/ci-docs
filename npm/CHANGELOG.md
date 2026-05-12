@@ -4,14 +4,22 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/), нумерація — [SemVer](https://semver.org/lang/uk/).
 
-## [0.0.2] - 2026-05-12
+## [1.0.0] - 2026-05-12
 
 ### Added
 
-- CLI `ci-docs` з subcommand `sync-schema` — інтроспектить Hasura, рахує SemVer-bump, оновлює CHANGELOG і пише SDL у `npm/schema/`.
-- Аргументи (тільки `--key value`, без env-vars):
-  - `--hasura-url <url>` (обовʼязковий) — GraphQL-ендпоінт для introspection.
-  - `--hasura-secret <value>` — значення `X-Hasura-Admin-Secret` (опціонально для публічних ендпоінтів).
-  - `--docs <path>` — корінь docs-репо (default `./docs`).
-  - `--schema-name <file>` — назва SDL-файлу в `npm/schema/` (default `maya.graphql`).
-  - `--db-sha <sha>` — SHA коміту db для запису в CHANGELOG (default `unknown`).
+- CLI `ci-docs sync-schema` — інтроспектить **будь-який** GraphQL-ендпоінт, рахує SemVer-bump через `graphql-inspector`, оновлює CHANGELOG і пише SDL у `npm/schema/`.
+  - `--endpoint <url>` (обовʼязковий) — GraphQL-ендпоінт.
+  - `--header "K: V"` (повторюваний) — будь-які HTTP-заголовки (Hasura admin secret, Bearer token тощо).
+  - `--docs <path>` (default `./docs`), `--schema-name <file>` (default `maya.graphql`), `--source-ref <text>` (default `unknown`).
+- CLI `ci-docs commit-push` — git add/commit/push для перелічених файлів.
+  - `--repo <path>`, `--message <msg>`, `--file <path>` (повторюваний), `--author-name`, `--author-email` — обовʼязкові.
+  - `--branch <name>` (default `main`), `--remote <name>` (default `origin`) — опціональні.
+  - Якщо staged-зміни відсутні, ні коміту, ні push не буде.
+
+### Changed
+
+- (BREAKING) Перейменовано CLI-аргументи `sync-schema`: `--hasura-url` → `--endpoint`, `--hasura-secret` → `--header`, `--db-sha` → `--source-ref`.
+- (BREAKING) Текст CHANGELOG, що генерується, більше не згадує Hasura: "Оновлено GraphQL-схему (`<ref>`)." та "Початкове додавання GraphQL-схеми.".
+- (BREAKING) `main()` та `formatChangelogBlock()` приймають `sourceRef` замість `dbSha`. `fetchSdl(endpoint, headers)` — headers як обʼєкт замість окремого `adminSecret`.
+- Видалено CLI-аргумент `--new-schema` зі `sync-schema` (живий ендпоінт — єдина точка входу).

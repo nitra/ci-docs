@@ -49,17 +49,17 @@ export function classifyChanges(changes) {
 
 /**
  * Будує markdown-блок changelog для версії.
- * @param {{version: string, date: string, dbSha: string, sections: {added: string[], removed: string[], changed: string[]}, first?: boolean}} params параметри блоку
+ * @param {{version: string, date: string, sourceRef: string, sections: {added: string[], removed: string[], changed: string[]}, first?: boolean}} params параметри блоку
  * @returns {string} markdown-блок з трейлінговим порожнім рядком
  */
-export function formatChangelogBlock({ version, date, dbSha, sections, first = false }) {
+export function formatChangelogBlock({ version, date, sourceRef, sections, first = false }) {
   const lines = [`## [${version}] - ${date}`, '']
 
   const changed = [...sections.changed]
   if (first) {
-    changed.unshift('Початкове додавання GraphQL-схеми з Hasura.')
+    changed.unshift('Початкове додавання GraphQL-схеми.')
   } else {
-    changed.unshift(`Оновлено GraphQL-схему з Hasura (\`db@${dbSha}\`).`)
+    changed.unshift(`Оновлено GraphQL-схему (\`${sourceRef}\`).`)
   }
 
   if (sections.added.length > 0) {
@@ -185,18 +185,15 @@ export function writeGithubOutput(values) {
 }
 
 /**
- * Шле introspection-запит до Hasura і повертає SDL-рядок.
- * @param {string} hasuraUrl URL ендпоінта GraphQL
- * @param {string} [adminSecret] значення `X-Hasura-Admin-Secret` (опціонально для публічних ендпоінтів)
+ * Шле introspection-запит до GraphQL-ендпоінта і повертає SDL-рядок.
+ * @param {string} endpoint URL GraphQL-ендпоінта
+ * @param {Record<string, string>} [headers] додаткові HTTP-заголовки (наприклад `{ 'X-Hasura-Admin-Secret': '...' }`)
  * @returns {Promise<string>} SDL-схема у вигляді рядка
  */
-export async function fetchSdl(hasuraUrl, adminSecret) {
-  const res = await fetch(hasuraUrl, {
+export async function fetchSdl(endpoint, headers = {}) {
+  const res = await fetch(endpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(adminSecret ? { 'X-Hasura-Admin-Secret': adminSecret } : {})
-    },
+    headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify({ query: getIntrospectionQuery() })
   })
   if (!res.ok) throw new Error(`Introspection failed: ${res.status} ${res.statusText}`)
@@ -206,11 +203,22 @@ export async function fetchSdl(hasuraUrl, adminSecret) {
 }
 
 /**
+ * Парсить рядок `Key: Value` у пару `[key, value]`. Помилка, якщо нема `:`.
+ * @param {string} raw сирий header
+ * @returns {[string, string]} key, value (обрізані з обох боків)
+ */
+export function parseHeader(raw) {
+  const idx = raw.indexOf(':')
+  if (idx === -1) throw new Error(`Invalid --header value (expected "Key: Value"): ${raw}`)
+  return [raw.slice(0, idx).trim(), raw.slice(idx + 1).trim()]
+}
+
+/**
  * Оркеструє весь flow: diff схем → bump → CHANGELOG → запис SDL.
- * @param {{newSdl: string, docsRoot: string, dbSha: string, date: string, schemaFilename?: string}} params параметри запуску
+ * @param {{newSdl: string, docsRoot: string, sourceRef: string, date: string, schemaFilename?: string}} params параметри запуску
  * @returns {Promise<{changed: boolean, bump: 'minor'|'patch'|null, version: string|null}>} результат
  */
-export async function main({ newSdl, docsRoot, dbSha, date, schemaFilename = 'maya.graphql' }) {
+export async function main({ newSdl, docsRoot, sourceRef, date, schemaFilename = 'maya.graphql' }) {
   const oldSchemaPath = `${docsRoot}/npm/schema/${schemaFilename}`
   const oldSdl = readSdl(oldSchemaPath)
 
@@ -226,7 +234,7 @@ export async function main({ newSdl, docsRoot, dbSha, date, schemaFilename = 'ma
   const npmDir = `${docsRoot}/npm`
   const version = bumpVersion(npmDir, bump)
 
-  const block = formatChangelogBlock({ version, date, dbSha: dbSha.slice(0, 7), sections, first })
+  const block = formatChangelogBlock({ version, date, sourceRef, sections, first })
   const changelogPath = `${npmDir}/CHANGELOG.md`
   const existingChangelog = readFileSync(changelogPath, 'utf8')
   writeFileSync(changelogPath, prependChangelog(existingChangelog, block))
@@ -240,15 +248,15 @@ export async function main({ newSdl, docsRoot, dbSha, date, schemaFilename = 'ma
 /**
  * CLI-обгортка для sync-schema. Приймає параметри як `--key value`.
  *
- * Обовʼязково одне з двох (взаємовиключно):
- *   --new-schema <path>       шлях до SDL-файлу зі свіжою схемою
- *   --hasura-url <url>        URL GraphQL-ендпоінта (introspect)
+ * Обовʼязковий:
+ *   --endpoint <url>        URL GraphQL-ендпоінта для introspection
  *
- * Необовʼязково:
- *   --hasura-secret <secret>  X-Hasura-Admin-Secret (fallback: env HASURA_ADMIN_SECRET)
- *   --docs <path>             корінь docs-репо (default './docs')
- *   --schema-name <file>      назва файлу в `npm/schema/` (default 'maya.graphql')
- *   --db-sha <sha>            SHA коміту db (default 'unknown')
+ * Необовʼязкові:
+ *   --header "K: V"         HTTP-заголовок (повторюваний; наприклад: `--header "X-Hasura-Admin-Secret: ..."`,
+ *                           `--header "Authorization: Bearer ..."`)
+ *   --docs <path>           корінь docs-репо (default './docs')
+ *   --schema-name <file>    назва файлу в `npm/schema/` (default 'maya.graphql')
+ *   --source-ref <ref>      текст, що йде у CHANGELOG як посилання на джерело (default 'unknown')
  *
  * @param {string[]} [argv] аргументи (без 'node' та script path). Default — process.argv.slice(2).
  * @returns {Promise<{changed: boolean, bump: string|null, version: string|null}>} результат main()
@@ -257,36 +265,28 @@ export async function cli(argv = process.argv.slice(2)) {
   const { values } = parseArgs({
     args: argv,
     options: {
-      'new-schema': { type: 'string' },
-      'hasura-url': { type: 'string' },
-      'hasura-secret': { type: 'string' },
+      endpoint: { type: 'string' },
+      header: { type: 'string', multiple: true, default: [] },
       docs: { type: 'string', default: './docs' },
       'schema-name': { type: 'string', default: 'maya.graphql' },
-      'db-sha': { type: 'string', default: 'unknown' }
+      'source-ref': { type: 'string', default: 'unknown' }
     },
     allowPositionals: false,
     strict: true
   })
 
-  const hasNewSchema = values['new-schema'] != null
-  const hasHasuraUrl = values['hasura-url'] != null
-
-  if (hasNewSchema && hasHasuraUrl) {
-    throw new Error('--new-schema and --hasura-url are mutually exclusive')
-  }
-  if (!hasNewSchema && !hasHasuraUrl) {
-    throw new Error('--new-schema or --hasura-url is required')
+  const endpoint = values.endpoint
+  if (!endpoint) {
+    throw new Error('--endpoint is required')
   }
 
-  const adminSecret = values['hasura-secret'] ?? process.env.HASURA_ADMIN_SECRET
-  const newSdl = hasHasuraUrl
-    ? await fetchSdl(values['hasura-url'], adminSecret)
-    : readFileSync(values['new-schema'], 'utf8')
+  const headers = Object.fromEntries(values.header.map(parseHeader))
+  const newSdl = await fetchSdl(endpoint, headers)
 
   const result = await main({
     newSdl,
     docsRoot: values.docs,
-    dbSha: values['db-sha'],
+    sourceRef: values['source-ref'],
     date: new Date().toISOString().slice(0, 10),
     schemaFilename: values['schema-name']
   })

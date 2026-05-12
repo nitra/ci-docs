@@ -5,11 +5,13 @@
  * Запуск: `npx -y @nitra/ci-docs <subcommand> [args...]`
  *
  * Доступні subcommands:
- *   sync-schema  — інтроспект Hasura → bump → CHANGELOG → копіювання SDL
+ *   sync-schema  — інтроспект GraphQL-ендпоінта → bump → CHANGELOG → запис SDL
+ *   commit-push  — git add/commit/push для оновлених файлів
  */
 
 const SUBCOMMANDS = {
-  'sync-schema': () => import('./sync-schema/main.mjs').then(m => m.cli)
+  'sync-schema': () => import('./sync-schema/main.mjs').then(m => m.cli),
+  'commit-push': () => import('./commit-push/main.mjs').then(m => m.cli)
 }
 
 const [subcommand, ...rest] = process.argv.slice(2)
