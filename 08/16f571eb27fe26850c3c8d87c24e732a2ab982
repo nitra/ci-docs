@@ -1,0 +1,20 @@
+package.json
+  h_74546f1f1ded3e 1-14
+npm/package.json
+  h_74546f1f1ded3e 1-24
+npm/README.md
+  h_74546f1f1ded3e 1
+.cspell.json
+  h_74546f1f1ded3e 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "0816f571eb27fe26850c3c8d87c24e732a2ab982",
+  "prompts": {},
+  "humans": {
+    "h_74546f1f1ded3e": {
+      "author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
