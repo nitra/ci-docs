@@ -17,3 +17,5 @@ demo/dist
 
 .DS_Store
 dist/
+
+.claude/hooks/capture-decisions.log

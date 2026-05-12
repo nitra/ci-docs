@@ -1,4 +1,5 @@
 {
+  "ignorePatterns": ["**/hasura/metadata/**", "**/schema.graphql", "**/auto-imports.d.ts"],
   "arrowParens": "avoid",
   "printWidth": 120,
   "bracketSpacing": true,
@@ -7,7 +8,7 @@
   "endOfLine": "lf",
   "htmlWhitespaceSensitivity": "css",
   "insertPragma": false,
-  "jsxSingleQuote": false,
+  "jsxSingleQuote": true,
   "proseWrap": "preserve",
   "quoteProps": "as-needed",
   "requirePragma": false,
