@@ -1,0 +1,21 @@
+.cspell.json
+  s_d942c310f1e8d3::t_d679715a58a97c 67
+  s_d942c310f1e8d3::t_17fc1fda28c69c 32
+  s_d942c310f1e8d3::t_986a54d707b4ca 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "eee9b81cb61cc859371f5ed24c82299c358be6c8",
+  "prompts": {},
+  "sessions": {
+    "s_d942c310f1e8d3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0321d20c-1adc-4def-bf7b-8cc8bebcd574",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
