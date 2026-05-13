@@ -1,0 +1,81 @@
+AGENTS.md
+  s_4205d8fce0446c::t_d380302893bde2 49-56
+docs/adr/_inbox/20260512-122012-d378d31b.md
+  s_4205d8fce0446c::t_d380302893bde2 13,24
+npm/tsconfig.emit-types.json
+  s_4205d8fce0446c::t_44cfcd2c71b623 1-14
+docs/adr/_inbox/20260512-133614-d378d31b.md
+  s_4205d8fce0446c::t_b33eb5d9dba901 57
+  s_4205d8fce0446c::t_de973b109e6a38 1-56,58-63
+npm/test/commit-push/main.test.mjs
+  s_4205d8fce0446c::t_3c76b1104ffad7 138-140
+  s_4205d8fce0446c::t_d44fc67e5f5bf3 2
+  s_4205d8fce0446c::t_dd66f116f07b53 9
+  s_4205d8fce0446c::t_4e86a26858aaec 68
+  s_4205d8fce0446c::t_d380302893bde2 168-179,189-196,202-204
+knip.json
+  s_a984fa9dc19539::t_fc146f7fd55f42 1-2,29
+  s_4205d8fce0446c::t_eacfdf0d84ef24 3-28
+npm/types/cli.d.mts
+  s_4205d8fce0446c::t_b33eb5d9dba901 2
+  s_4205d8fce0446c::t_35ccacf00b6535 1
+hk.pkl
+  s_4205d8fce0446c::t_0899d6d7aba0fc 9,11
+docs/adr/_inbox/20260513-045608-d378d31b.md
+  s_4205d8fce0446c::t_de973b109e6a38 1-79
+docs/adr/_inbox/20260513-044909-d378d31b.md
+  s_4205d8fce0446c::t_de973b109e6a38 1-28
+npm/test/sync-schema/main.test.mjs
+  s_4205d8fce0446c::t_3c76b1104ffad7 185,191,273,276,286,290
+  s_4205d8fce0446c::t_ab96aa260ccf2c 287-289
+  s_4205d8fce0446c::t_9904387e94517d 390
+  s_4205d8fce0446c::t_d380302893bde2 36-40,50-54,70-75,86-89,95-98,318-325,336,345-352
+  s_4205d8fce0446c::t_7ab3c7a8dcc014 186-190
+  s_4205d8fce0446c::t_5b3995b422037a 17
+npm/src/sync-schema/main.mjs
+  s_4205d8fce0446c::t_db79624c37e504 283
+  s_4205d8fce0446c::t_b90a7627034b4e 3
+  s_4205d8fce0446c::t_1f2c9f3ac2ab4e 182
+npm/src/cli.mjs
+  s_4205d8fce0446c::t_1c57575848abd5 26-36
+npm/types/commit-push/main.d.mts
+  s_4205d8fce0446c::t_b33eb5d9dba901 6-21,23-25,43-45
+  s_4205d8fce0446c::t_35ccacf00b6535 1-5,22,26-42
+npm/package.json
+  s_4205d8fce0446c::t_73f97d81353c08 3,24
+.cspell.json
+  s_4205d8fce0446c::t_999fa85027eda3 39,49-51
+  s_4205d8fce0446c::t_48a2943a2172ef 14-16,18,20,23-27,30-36,40-41,52,55-56,59
+  s_4205d8fce0446c::t_fd346e8500bf61 17,19,21-22,28-29,37-38,42-48,53-54,57-58
+npm/types/sync-schema/main.d.mts
+  s_4205d8fce0446c::t_b33eb5d9dba901 6-9,11-21,27-43,50,57-63,65-68,74,81,87,94,100,106-117,119-122,139-142
+  s_4205d8fce0446c::t_35ccacf00b6535 1-5,10,22-26,44-49,51-56,64,69-73,75-80,82-86,88-93,95-99,101-105,118,123-138
+.markdownlint-cli2.jsonc
+  s_4205d8fce0446c::t_431a30f488d91b 6-8
+npm/CHANGELOG.md
+  s_4205d8fce0446c::t_29969dc39f60a2 7-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "5a15ca0f8b88963311e563bf38f093340c9e2d0f",
+  "prompts": {},
+  "sessions": {
+    "s_4205d8fce0446c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d378d31b-990b-4fb4-a544-ec1035382ddb",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_a984fa9dc19539": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c5efa632-de26-4576-95ac-de86362af369",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
