@@ -1,0 +1,25 @@
+docs/adr/_inbox/20260513-055013-d378d31b.md
+  s_4205d8fce0446c::t_51ecfdfc7657a0 14,44,49,64,68
+.cspell.json
+  s_4205d8fce0446c::t_6fa7d5bef92e82 40
+  s_4205d8fce0446c::t_091ca86f6e88ec 64-65
+  s_4205d8fce0446c::t_f1cca2b3ffd1e7 49-50
+  s_4205d8fce0446c::t_816a4388853def 23-24
+  s_4205d8fce0446c::t_fed5b482fb373e 44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "5c1c7ac0214a426b467cfbb1e8203fcf86901bdc",
+  "prompts": {},
+  "sessions": {
+    "s_4205d8fce0446c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d378d31b-990b-4fb4-a544-ec1035382ddb",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
