@@ -1,11 +1,12 @@
 import { describe, it, expect, afterEach } from 'bun:test'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { cli, main } from '../../src/commit-push/main.mjs'
 
 const AUTHOR = { authorName: 'sync-bot[bot]', authorEmail: 'sync-bot[bot]@users.noreply.github.com' }
+const SHA_REGEX = /^[0-9a-f]{40}$/
 
 /**
  * @param {string} cwd working directory
@@ -64,7 +65,7 @@ describe('commit-push main()', () => {
     })
 
     expect(result.committed).toBe(true)
-    expect(result.sha).toMatch(/^[0-9a-f]{40}$/)
+    expect(result.sha).toMatch(SHA_REGEX)
 
     expect(git(remoteRepo, ['log', '-1', '--pretty=%s', 'main'])).toBe('chore: add files')
     expect(git(remoteRepo, ['log', '-1', '--pretty=%an', 'main'])).toBe('sync-bot[bot]')
@@ -134,6 +135,9 @@ describe('commit-push cli()', () => {
   /** @type {string} */
   let workRepo
 
+  /**
+   *
+   */
   function setup() {
     tmp = mkdtempSync(join(tmpdir(), 'commit-push-cli-'))
     remoteRepo = join(tmp, 'remote.git')
@@ -161,12 +165,18 @@ describe('commit-push cli()', () => {
     writeFileSync(join(workRepo, 'b.txt'), 'b\n')
 
     const result = cli([
-      '--repo', workRepo,
-      '--message', 'add a and b',
-      '--file', 'a.txt',
-      '--file', 'b.txt',
-      '--author-name', 'bot[bot]',
-      '--author-email', 'bot@x'
+      '--repo',
+      workRepo,
+      '--message',
+      'add a and b',
+      '--file',
+      'a.txt',
+      '--file',
+      'b.txt',
+      '--author-name',
+      'bot[bot]',
+      '--author-email',
+      'bot@x'
     ])
 
     expect(result.committed).toBe(true)
@@ -176,17 +186,21 @@ describe('commit-push cli()', () => {
   it('кидає помилку коли немає --file', () => {
     expect(() =>
       cli([
-        '--repo', '/tmp/x',
-        '--message', 'msg',
-        '--author-name', 'a',
-        '--author-email', 'b'
+        '--repo',
+        join(tmpdir(), 'commit-push-cli-missing-file'),
+        '--message',
+        'msg',
+        '--author-name',
+        'a',
+        '--author-email',
+        'b'
       ])
     ).toThrow('--file is required')
   })
 
   it('кидає помилку на брак --repo', () => {
-    expect(() =>
-      cli(['--message', 'msg', '--file', 'a', '--author-name', 'a', '--author-email', 'b'])
-    ).toThrow('--repo is required')
+    expect(() => cli(['--message', 'msg', '--file', 'a', '--author-name', 'a', '--author-email', 'b'])).toThrow(
+      '--repo is required'
+    )
   })
 })

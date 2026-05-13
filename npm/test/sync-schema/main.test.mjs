@@ -14,6 +14,7 @@ import {
 } from '../../src/sync-schema/main.mjs'
 
 const HEADER = `# Changelog\n\nУсі помітні зміни цього пакета документуються тут.\n\nФормат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/), нумерація — [SemVer](https://semver.org/lang/uk/).\n\n`
+const INVALID_HEADER_REGEX = /Invalid --header/
 const OLD_SDL = readFileSync(join(import.meta.dir, '__fixtures__/old-schema.graphql'), 'utf8')
 const NEW_SDL = readFileSync(join(import.meta.dir, '__fixtures__/new-schema.graphql'), 'utf8')
 
@@ -32,7 +33,11 @@ describe('classifyChanges', () => {
 
   it('повертає bump=minor для будь-якого BREAKING', () => {
     const result = classifyChanges([
-      { type: 'FIELD_REMOVED', criticality: { level: 'BREAKING' }, message: "Field 'old' was removed from type 'User'" },
+      {
+        type: 'FIELD_REMOVED',
+        criticality: { level: 'BREAKING' },
+        message: "Field 'old' was removed from type 'User'"
+      },
       { type: 'FIELD_ADDED', criticality: { level: 'NON_BREAKING' }, message: "Field 'new' was added to type 'User'" }
     ])
     expect(result.bump).toBe('minor')
@@ -42,7 +47,11 @@ describe('classifyChanges', () => {
 
   it('повертає bump=patch для DANGEROUS', () => {
     const result = classifyChanges([
-      { type: 'FIELD_ARGUMENT_DEFAULT_CHANGED', criticality: { level: 'DANGEROUS' }, message: "Default for arg 'limit' changed" }
+      {
+        type: 'FIELD_ARGUMENT_DEFAULT_CHANGED',
+        criticality: { level: 'DANGEROUS' },
+        message: "Default for arg 'limit' changed"
+      }
     ])
     expect(result.bump).toBe('patch')
     expect(result.sections.changed).toEqual(["Default for arg 'limit' changed"])
@@ -58,7 +67,12 @@ describe('classifyChanges', () => {
 })
 
 describe('formatChangelogBlock', () => {
-  const baseInput = { version: '0.1.0', date: '2026-05-11', sourceRef: 'db@a1b2c3d', sections: { added: [], removed: [], changed: [] } }
+  const baseInput = {
+    version: '0.1.0',
+    date: '2026-05-11',
+    sourceRef: 'db@a1b2c3d',
+    sections: { added: [], removed: [], changed: [] }
+  }
 
   it('завжди містить "Changed" з sourceRef', () => {
     const out = formatChangelogBlock(baseInput)
@@ -69,13 +83,19 @@ describe('formatChangelogBlock', () => {
   })
 
   it('додає секцію Removed для breaking-видалень', () => {
-    const out = formatChangelogBlock({ ...baseInput, sections: { added: [], removed: ["Field 'old' removed"], changed: [] } })
+    const out = formatChangelogBlock({
+      ...baseInput,
+      sections: { added: [], removed: ["Field 'old' removed"], changed: [] }
+    })
     expect(out).toContain('### Removed')
     expect(out).toContain("- Field 'old' removed")
   })
 
   it('додає секцію Added для non-breaking додавань', () => {
-    const out = formatChangelogBlock({ ...baseInput, sections: { added: ["Field 'new' added"], removed: [], changed: [] } })
+    const out = formatChangelogBlock({
+      ...baseInput,
+      sections: { added: ["Field 'new' added"], removed: [], changed: [] }
+    })
     expect(out).toContain('### Added')
     expect(out).toContain("- Field 'new' added")
   })
@@ -155,13 +175,20 @@ describe('parseHeader', () => {
   })
 
   it('кидає помилку без двокрапки', () => {
-    expect(() => parseHeader('not-a-header')).toThrow(/Invalid --header/)
+    expect(() => parseHeader('not-a-header')).toThrow(INVALID_HEADER_REGEX)
   })
 })
 
 describe('main (e2e via fixtures)', () => {
   let tmp
 
+  /**
+   * Створює тимчасову docs-директорію з npm/ та опційно старою схемою.
+   * @param {object} [options] параметри сетапу
+   * @param {boolean} [options.withOldSchema] чи створювати стару схему
+   * @param {string} [options.schemaFilename] імʼя файла схеми
+   * @returns {{docsRoot: string, npmDir: string}} шляхи створених директорій
+   */
   function setupTmpDocs({ withOldSchema = true, schemaFilename = 'maya.graphql' } = {}) {
     tmp = mkdtempSync(join(tmpdir(), 'sync-schema-'))
     const npmDir = join(tmp, 'npm')
@@ -243,6 +270,10 @@ describe('cli (тільки args)', () => {
   let server
   let receivedHeaders
 
+  /**
+   * Створює мінімальну docs-директорію без схеми для cli-тестів.
+   * @returns {string} шлях до docsRoot
+   */
   function setupBareDocs() {
     tmp = mkdtempSync(join(tmpdir(), 'sync-schema-cli-'))
     const npmDir = join(tmp, 'npm')
@@ -252,6 +283,11 @@ describe('cli (тільки args)', () => {
     return tmp
   }
 
+  /**
+   * Стартує локальний mock GraphQL сервер з заданою SDL.
+   * @param {string} sdl GraphQL SDL для побудови схеми
+   * @returns {string} URL запущеного сервера
+   */
   function startMockGraphql(sdl) {
     const schema = buildSchema(sdl)
     server = Bun.serve({
@@ -279,10 +315,14 @@ describe('cli (тільки args)', () => {
     const docsRoot = setupBareDocs()
     const url = startMockGraphql(NEW_SDL)
     const result = await cli([
-      '--endpoint', url,
-      '--docs', docsRoot,
-      '--schema-name', 'test.graphql',
-      '--source-ref', 'db@abcdef1'
+      '--endpoint',
+      url,
+      '--docs',
+      docsRoot,
+      '--schema-name',
+      'test.graphql',
+      '--source-ref',
+      'db@abcdef1'
     ])
 
     expect(result.changed).toBe(true)
@@ -293,11 +333,7 @@ describe('cli (тільки args)', () => {
   it('одиничний --header проходить як HTTP-заголовок', async () => {
     const docsRoot = setupBareDocs()
     const url = startMockGraphql(NEW_SDL)
-    await cli([
-      '--endpoint', url,
-      '--header', 'X-Hasura-Admin-Secret: super-secret',
-      '--docs', docsRoot
-    ])
+    await cli(['--endpoint', url, '--header', 'X-Hasura-Admin-Secret: super-secret', '--docs', docsRoot])
 
     expect(receivedHeaders.get('x-hasura-admin-secret')).toBe('super-secret')
   })
@@ -306,10 +342,14 @@ describe('cli (тільки args)', () => {
     const docsRoot = setupBareDocs()
     const url = startMockGraphql(NEW_SDL)
     await cli([
-      '--endpoint', url,
-      '--header', 'Authorization: Bearer abc:def',
-      '--header', 'X-Tenant: org-42',
-      '--docs', docsRoot
+      '--endpoint',
+      url,
+      '--header',
+      'Authorization: Bearer abc:def',
+      '--header',
+      'X-Tenant: org-42',
+      '--docs',
+      docsRoot
     ])
 
     expect(receivedHeaders.get('authorization')).toBe('Bearer abc:def')
@@ -347,6 +387,6 @@ describe('cli (тільки args)', () => {
   })
 
   it('викидає якщо не передано --endpoint', () => {
-    expect(cli(['--docs', '/tmp/nowhere'])).rejects.toThrow('--endpoint is required')
+    expect(cli(['--docs', join(tmpdir(), 'sync-schema-nowhere')])).rejects.toThrow('--endpoint is required')
   })
 })

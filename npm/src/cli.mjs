@@ -23,15 +23,15 @@ Subcommands:
   ${Object.keys(SUBCOMMANDS).join('\n  ')}
 
 Run \`ci-docs <subcommand> --help\` for subcommand-specific options.`)
-  process.exit(subcommand ? 0 : 2)
+  process.exitCode = subcommand ? 0 : 2
+} else {
+  const loader = SUBCOMMANDS[subcommand]
+  if (loader) {
+    const run = await loader()
+    await run(rest)
+  } else {
+    console.error(`Unknown subcommand: ${subcommand}`)
+    console.error(`Available: ${Object.keys(SUBCOMMANDS).join(', ')}`)
+    process.exitCode = 2
+  }
 }
-
-const loader = SUBCOMMANDS[subcommand]
-if (!loader) {
-  console.error(`Unknown subcommand: ${subcommand}`)
-  console.error(`Available: ${Object.keys(SUBCOMMANDS).join(', ')}`)
-  process.exit(2)
-}
-
-const run = await loader()
-await run(rest)

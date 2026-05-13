@@ -62,7 +62,6 @@ export function main({ repo, files, message, authorName, authorEmail, branch = '
  * Необовʼязкові:
  *   --branch <name>         цільова гілка (default 'main')
  *   --remote <name>         remote (default 'origin')
- *
  * @param {string[]} [argv] аргументи. Default — process.argv.slice(2).
  * @returns {{committed: boolean, sha: string|null}} результат main()
  */

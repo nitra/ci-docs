@@ -46,9 +46,19 @@ Generated from the root `package.json` on each `npx @nitra/cursor` sync. Prefer 
 
 - **Залежності**: `bun i`
 
+- **lint**: `bun run lint`
+
+- **lint-js**: `bun run lint-js`
+
+- **lint-text**: `bun run lint-text`
+
+- **lint-ga**: `bun run lint-ga`
+
 - **Оновити правила та AGENTS.md** (після змін у правилах/шаблоні CLI): `npx @nitra/cursor`
 
 - **Перевірки правил (programmatic)**: `npx @nitra/cursor check`
+
+- **knip (невикористані залежності та експорти)**: `bunx knip`
 
 ## Instructions for all agents
 

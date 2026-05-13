@@ -1,6 +1,6 @@
 {
   "name": "@nitra/ci-docs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Nitra CI tooling: sync GraphQL schema to a docs npm package (and more to come).",
   "homepage": "https://github.com/nitra/ci-docs",
   "bugs": {
@@ -21,7 +21,7 @@
     "CHANGELOG.md"
   ],
   "type": "module",
-  "types": "./types/index.d.ts",
+  "types": "./types/cli.d.mts",
   "publishConfig": {
     "access": "public"
   },

@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, appendFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { env } from 'node:process'
 import { parseArgs } from 'node:util'
 import { buildSchema, buildClientSchema, printSchema, getIntrospectionQuery } from 'graphql'
 import { diff } from '@graphql-inspector/core'
@@ -178,7 +179,7 @@ export function bumpVersion(npmDir, kind) {
  * @returns {void}
  */
 export function writeGithubOutput(values) {
-  const outPath = process.env.GITHUB_OUTPUT
+  const outPath = env.GITHUB_OUTPUT
   if (!outPath) return
   const lines = Object.entries(values).map(([k, v]) => `${k}=${v}`)
   appendFileSync(outPath, lines.join('\n') + '\n')
@@ -257,7 +258,6 @@ export async function main({ newSdl, docsRoot, sourceRef, date, schemaFilename =
  *   --docs <path>           корінь docs-репо (default './docs')
  *   --schema-name <file>    назва файлу в `npm/schema/` (default 'maya.graphql')
  *   --source-ref <ref>      текст, що йде у CHANGELOG як посилання на джерело (default 'unknown')
- *
  * @param {string[]} [argv] аргументи (без 'node' та script path). Default — process.argv.slice(2).
  * @returns {Promise<{changed: boolean, bump: string|null, version: string|null}>} результат main()
  */
@@ -280,7 +280,7 @@ export async function cli(argv = process.argv.slice(2)) {
     throw new Error('--endpoint is required')
   }
 
-  const headers = Object.fromEntries(values.header.map(parseHeader))
+  const headers = Object.fromEntries(values.header.map(h => parseHeader(h)))
   const newSdl = await fetchSdl(endpoint, headers)
 
   const result = await main({

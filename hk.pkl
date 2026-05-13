@@ -6,9 +6,9 @@ import "package://github.com/jdx/hk/releases/download/v1.6.0/hk@1.6.0#/Builtins.
   ["pre-commit"] {
     `steps` {
       ["tsc"] {
-        glob = List("npm/src/**/*.js")
+        glob = List("npm/src/**/*.mjs")
         dir = "npm"
-        check = "bunx -p typescript tsc src/**/*.js --declaration --allowJs --emitDeclarationOnly --outDir types --skipLibCheck"
+        check = "bunx -p typescript tsc -p tsconfig.emit-types.json"
       }
     }
   }
