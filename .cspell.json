@@ -6,6 +6,8 @@
     "**/vscode-extension/**",
     "**/.git/**",
     "**/test/**",
+    "**/k8s/**/*.yaml",
+    "*.svg",
     ".vscode",
     "report",
     "yarn.lock"
@@ -13,6 +15,8 @@
   "import": ["@nitra/cspell-dict/cspell-ext.json"],
   "words": [
     "bunfig",
+    "батчу",
+    "версіонуватися",
     "conftest",
     "obov",
     "rego",

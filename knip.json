@@ -1,16 +1,24 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": [
-    "eslint.config.{js,mjs,cjs}",
-    "stylelint.config.{js,cjs,mjs}",
-    "oxlint.config.{js,mjs}",
-    "jscpd.config.{js,mjs}",
-    "markdownlint-cli2.config.{js,mjs,cjs,jsonc}",
-    ".markdownlint-cli2.{jsonc,cjs,mjs}",
-    "commitlint.config.{js,cjs,mjs}"
-  ],
-  "project": ["**/*.{js,mjs,cjs,jsx,ts,tsx,mts,cts}"],
-  "ignore": ["**/__fixtures__/**"],
+  "workspaces": {
+    ".": {
+      "entry": [
+        "eslint.config.{js,mjs,cjs}",
+        "stylelint.config.{js,cjs,mjs}",
+        "oxlint.config.{js,mjs}",
+        "jscpd.config.{js,mjs}",
+        "markdownlint-cli2.config.{js,mjs,cjs,jsonc}",
+        ".markdownlint-cli2.{jsonc,cjs,mjs}",
+        "commitlint.config.{js,cjs,mjs}"
+      ],
+      "project": ["**/*.{js,mjs,cjs,jsx,ts,tsx,mts,cts}"]
+    },
+    "npm": {
+      "entry": ["src/cli.mjs", "test/**/*.test.{js,mjs,cjs,ts,mts,cts}"],
+      "project": ["**/*.{js,mjs,cjs,jsx,ts,tsx,mts,cts}"]
+    }
+  },
+  "ignore": ["**/__fixtures__/**", "npm/types/**"],
   "ignoreDependencies": ["@nitra/cspell-dict", "/@cspell\\/dict-.+/", "graphql"],
   "ignoreBinaries": [
     "actionlint",
@@ -22,6 +30,7 @@
     "oxfmt",
     "oxlint",
     "shellcheck",
+    "trufflehog",
     "uvx",
     "v8r",
     "zizmor"

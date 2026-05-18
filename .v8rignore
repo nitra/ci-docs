@@ -1,3 +1,5 @@
 .vscode/extensions.json
 .vscode/settings.json
 .git/**
+npm/tsconfig.emit-types.json
+.cursor/hooks.json

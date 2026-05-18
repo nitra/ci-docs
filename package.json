@@ -1,6 +1,6 @@
 {
   "name": "nitra-ci-docs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "nitra ci-docs components",
   "author": "v@nitra.ai",
   "workspaces": [
@@ -8,14 +8,16 @@
   ],
   "type": "module",
   "scripts": {
-    "lint": "bun run lint-ga && bun run lint-js && bun run lint-text && oxfmt .",
+    "lint": "bun run lint-ga && bun run lint-js && bun run lint-text && bun run lint-image && bun run lint-security && oxfmt .",
     "lint-ga": "n-cursor lint-ga",
-    "lint-js": "bunx oxlint --fix && bunx eslint --fix . && bunx jscpd .",
-    "lint-text": "npx cspell . && bun ./node_modules/@nitra/cursor/scripts/run-shellcheck-text.mjs && bunx markdownlint-cli2 --fix \"**/*.md\" \"**/*.mdc\" && bun ./node_modules/@nitra/cursor/scripts/run-v8r.mjs"
+    "lint-image": "npx @nitra/minify-image --src=. --write",
+    "lint-js": "bunx oxlint --fix && bunx eslint --fix . && bunx jscpd . && bunx knip --no-config-hints",
+    "lint-security": "trufflehog filesystem . --no-update --exclude-paths .trufflehog-exclude --results=verified,unknown --fail",
+    "lint-text": "n-cursor lint-text"
   },
   "devDependencies": {
     "@nitra/cspell-dict": "^2.1.0",
-    "@nitra/cursor": "^1.9.12",
+    "@nitra/cursor": "^1.13.34",
     "@nitra/eslint-config": "^3.9.2"
   },
   "engines": {

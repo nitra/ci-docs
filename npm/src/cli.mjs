@@ -2,7 +2,7 @@
 /**
  * `@nitra/ci-docs` — CLI-диспатчер.
  *
- * Запуск: `npx -y @nitra/ci-docs <subcommand> [args...]`
+ * Запуск: `npx -y \@nitra/ci-docs <subcommand> [args...]`
  *
  * Доступні subcommands:
  *   sync-schema  — інтроспект GraphQL-ендпоінта → bump → CHANGELOG → запис SDL

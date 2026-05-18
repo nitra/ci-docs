@@ -19,3 +19,4 @@ demo/dist
 dist/
 
 .claude/hooks/capture-decisions.log
+.claude/hooks/normalize-decisions.log

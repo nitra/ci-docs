@@ -9,6 +9,7 @@
 @.cursor/rules/n-js-lint.mdc
 @.cursor/rules/n-js-run.mdc
 @.cursor/rules/n-npm-module.mdc
+@.cursor/rules/n-security.mdc
 @.cursor/rules/n-text.mdc
 
 ## Лінт і ESLint (без паралельних запусків)
@@ -17,6 +18,8 @@
 
 ## Skills
 
+- `.cursor/skills/n-adr-normalize/SKILL.md` — Ручний запуск ADR-нормалізації — обхід порогу й min-interval, прогон одного батчу чернеток через LLM, перегляд результату через git diff
+  Команда: `/n-adr-normalize`
 - `.cursor/skills/n-fix/SKILL.md` — Виправити проєкт відповідно до всіх правил в .cursor/rules/
   Команда: `/n-fix`
 - `.cursor/skills/n-lint/SKILL.md` — Запустити кореневий bun run lint, виправити порушення й підтвердити чистий вихід
