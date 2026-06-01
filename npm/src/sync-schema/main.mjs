@@ -50,18 +50,33 @@ export function classifyChanges(changes) {
 
 /**
  * Будує markdown-блок changelog для версії.
- * @param {{version: string, date: string, sourceRef: string, sections: {added: string[], removed: string[], changed: string[]}, first?: boolean}} params параметри блоку
+ * @param {{version: string, date: string, sourceRef: string, sections: {added: string[], removed: string[], changed: string[]}, graphqlFirst?: boolean, graphqlChanged?: boolean, sqlFirst?: boolean, sqlChanged?: boolean}} params параметри блоку
  * @returns {string} markdown-блок з трейлінговим порожнім рядком
  */
-export function formatChangelogBlock({ version, date, sourceRef, sections, first = false }) {
+export function formatChangelogBlock({
+  version,
+  date,
+  sourceRef,
+  sections,
+  graphqlFirst = false,
+  graphqlChanged = true,
+  sqlFirst = false,
+  sqlChanged = false
+}) {
   const lines = [`## [${version}] - ${date}`, '']
 
-  const changed = [...sections.changed]
-  if (first) {
-    changed.unshift('Початкове додавання GraphQL-схеми.')
-  } else {
-    changed.unshift(`Оновлено GraphQL-схему (\`${sourceRef}\`).`)
+  const changed = []
+  if (graphqlFirst) {
+    changed.push('Початкове додавання GraphQL-схеми.')
+  } else if (graphqlChanged) {
+    changed.push(`Оновлено GraphQL-схему (\`${sourceRef}\`).`)
   }
+  if (sqlFirst) {
+    changed.push('Початкове додавання SQL-схеми (ER).')
+  } else if (sqlChanged) {
+    changed.push(`Оновлено SQL-схему ER (\`${sourceRef}\`).`)
+  }
+  changed.push(...sections.changed)
 
   if (sections.added.length > 0) {
     lines.push('### Added', '')
@@ -204,6 +219,42 @@ export async function fetchSdl(endpoint, headers = {}) {
 }
 
 /**
+ * Виводить URL Hasura pg_dump-ендпоінта з GraphQL-ендпоінта.
+ * `https://host/v1/graphql` → `https://host/v1alpha1/pg_dump` (query/hash відкидаються).
+ * @param {string} graphqlEndpoint URL GraphQL-ендпоінта
+ * @returns {string} URL pg_dump-ендпоінта
+ */
+export function derivePgDumpEndpoint(graphqlEndpoint) {
+  const url = new URL(graphqlEndpoint)
+  const suffix = '/v1/graphql'
+  url.pathname = url.pathname.endsWith(suffix)
+    ? url.pathname.slice(0, -suffix.length) + '/v1alpha1/pg_dump'
+    : '/v1alpha1/pg_dump'
+  url.search = ''
+  url.hash = ''
+  return url.toString()
+}
+
+/**
+ * Тягне SQL-дамп схеми БД через Hasura pg_dump-ендпоінт і повертає DDL-рядок.
+ * @param {string} endpoint URL pg_dump-ендпоінта (наприклад `https://host/v1alpha1/pg_dump`)
+ * @param {Record<string, string>} [headers] додаткові HTTP-заголовки (наприклад `{ 'X-Hasura-Admin-Secret': '...' }`)
+ * @param {{schema?: string, source?: string}} [opts] `schema` — pg-схема (default 'public'), `source` — Hasura-джерело (default 'default')
+ * @returns {Promise<string>} SQL-дамп (schema-only) у вигляді рядка
+ */
+export async function fetchSql(endpoint, headers = {}, { schema = 'public', source = 'default' } = {}) {
+  const dumpOpts = ['-O', '-x', '--schema-only']
+  if (schema) dumpOpts.push(`--schema=${schema}`)
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify({ opts: dumpOpts, clean_output: true, source })
+  })
+  if (!res.ok) throw new Error(`pg_dump failed: ${res.status} ${res.statusText}`)
+  return await res.text()
+}
+
+/**
  * Парсить рядок `Key: Value` у пару `[key, value]`. Помилка, якщо нема `:`.
  * @param {string} raw сирий header
  * @returns {[string, string]} key, value (обрізані з обох боків)
@@ -214,36 +265,83 @@ export function parseHeader(raw) {
   return [raw.slice(0, idx).trim(), raw.slice(idx + 1).trim()]
 }
 
+const BUMP_RANK = { major: 3, minor: 2, patch: 1 }
+
 /**
- * Оркеструє весь flow: diff схем → bump → CHANGELOG → запис SDL.
- * @param {{newSdl: string, docsRoot: string, sourceRef: string, date: string, schemaFilename?: string}} params параметри запуску
- * @returns {Promise<{changed: boolean, bump: 'minor'|'patch'|null, version: string|null}>} результат
+ * Повертає bump вищого пріоритету (major > minor > patch > null).
+ * @param {'major'|'minor'|'patch'|null} a перший bump
+ * @param {'major'|'minor'|'patch'|null} b другий bump
+ * @returns {'major'|'minor'|'patch'|null} підсумковий bump
  */
-export async function main({ newSdl, docsRoot, sourceRef, date, schemaFilename = 'maya.graphql' }) {
+function maxBump(a, b) {
+  if (a === null) return b
+  if (b === null) return a
+  return BUMP_RANK[a] >= BUMP_RANK[b] ? a : b
+}
+
+/**
+ * Оркеструє весь flow: diff схем (GraphQL + SQL/ER) → bump → CHANGELOG → запис SDL/SQL.
+ * SQL обробляється, лише якщо передано `newSql` (інакше — як раніше, тільки GraphQL).
+ * @param {{newSdl: string, newSql?: string|null, docsRoot: string, sourceRef: string, date: string, schemaFilename?: string, sqlFilename?: string}} params параметри запуску
+ * @returns {Promise<{changed: boolean, bump: 'minor'|'patch'|null, version: string|null, graphqlChanged: boolean, sqlChanged: boolean}>} результат
+ */
+export async function main({
+  newSdl,
+  newSql = null,
+  docsRoot,
+  sourceRef,
+  date,
+  schemaFilename = 'maya.graphql',
+  sqlFilename = 'maya.sql'
+}) {
   const oldSchemaPath = `${docsRoot}/npm/schema/${schemaFilename}`
+  const oldSqlPath = `${docsRoot}/npm/er/${sqlFilename}`
+
   const oldSdl = readSdl(oldSchemaPath)
-
-  const first = oldSdl === null
-  const changes = first ? [] : await runInspector(oldSdl, newSdl)
+  const graphqlFirst = oldSdl === null
+  const changes = graphqlFirst ? [] : await runInspector(oldSdl, newSdl)
   const { bump: classifiedBump, sections } = classifyChanges(changes)
-  const bump = first ? 'patch' : classifiedBump
+  const graphqlBump = graphqlFirst ? 'patch' : classifiedBump
+  const graphqlChanged = graphqlBump !== null
 
-  if (!first && bump === null) {
-    return { changed: false, bump: null, version: null }
+  const hasSql = newSql !== null
+  const oldSql = hasSql ? readSdl(oldSqlPath) : null
+  const sqlFirst = hasSql && oldSql === null
+  const sqlChanged = hasSql && newSql !== oldSql
+  const sqlBump = sqlChanged ? 'patch' : null
+
+  const bump = maxBump(graphqlBump, sqlBump)
+  if (bump === null) {
+    return { changed: false, bump: null, version: null, graphqlChanged: false, sqlChanged: false }
   }
 
   const npmDir = `${docsRoot}/npm`
   const version = bumpVersion(npmDir, bump)
 
-  const block = formatChangelogBlock({ version, date, sourceRef, sections, first })
+  const block = formatChangelogBlock({
+    version,
+    date,
+    sourceRef,
+    sections,
+    graphqlFirst,
+    graphqlChanged,
+    sqlFirst,
+    sqlChanged
+  })
   const changelogPath = `${npmDir}/CHANGELOG.md`
   const existingChangelog = readFileSync(changelogPath, 'utf8')
   writeFileSync(changelogPath, prependChangelog(existingChangelog, block))
 
-  mkdirSync(dirname(oldSchemaPath), { recursive: true })
-  writeFileSync(oldSchemaPath, newSdl)
+  if (graphqlChanged) {
+    mkdirSync(dirname(oldSchemaPath), { recursive: true })
+    writeFileSync(oldSchemaPath, newSdl)
+  }
+  if (sqlChanged) {
+    mkdirSync(dirname(oldSqlPath), { recursive: true })
+    writeFileSync(oldSqlPath, newSql)
+  }
 
-  return { changed: true, bump, version }
+  return { changed: true, bump, version, graphqlChanged, sqlChanged }
 }
 
 /**
@@ -258,8 +356,13 @@ export async function main({ newSdl, docsRoot, sourceRef, date, schemaFilename =
  *   --docs <path>           корінь docs-репо (default './docs')
  *   --schema-name <file>    назва файлу в `npm/schema/` (default 'maya.graphql')
  *   --source-ref <ref>      текст, що йде у CHANGELOG як посилання на джерело (default 'unknown')
+ *   --sql-name <file>       назва SQL-файлу в `npm/er/` (default 'maya.sql')
+ *   --sql-endpoint <url>    URL Hasura pg_dump-ендпоінта (default — виводиться з --endpoint)
+ *   --sql-schema <name>     pg-схема для дампу (default 'public')
+ *   --sql-source <name>     Hasura-джерело для дампу (default 'default')
+ *   --skip-sql              не тягнути й не синхронізувати SQL (тільки GraphQL)
  * @param {string[]} [argv] аргументи (без 'node' та script path). Default — process.argv.slice(2).
- * @returns {Promise<{changed: boolean, bump: string|null, version: string|null}>} результат main()
+ * @returns {Promise<{changed: boolean, bump: string|null, version: string|null, graphqlChanged: boolean, sqlChanged: boolean}>} результат main()
  */
 export async function cli(argv = process.argv.slice(2)) {
   const { values } = parseArgs({
@@ -269,7 +372,12 @@ export async function cli(argv = process.argv.slice(2)) {
       header: { type: 'string', multiple: true, default: [] },
       docs: { type: 'string', default: './docs' },
       'schema-name': { type: 'string', default: 'maya.graphql' },
-      'source-ref': { type: 'string', default: 'unknown' }
+      'source-ref': { type: 'string', default: 'unknown' },
+      'sql-name': { type: 'string', default: 'maya.sql' },
+      'sql-endpoint': { type: 'string' },
+      'sql-schema': { type: 'string', default: 'public' },
+      'sql-source': { type: 'string', default: 'default' },
+      'skip-sql': { type: 'boolean', default: false }
     },
     allowPositionals: false,
     strict: true
@@ -283,18 +391,28 @@ export async function cli(argv = process.argv.slice(2)) {
   const headers = Object.fromEntries(values.header.map(h => parseHeader(h)))
   const newSdl = await fetchSdl(endpoint, headers)
 
+  let newSql = null
+  if (!values['skip-sql']) {
+    const sqlEndpoint = values['sql-endpoint'] ?? derivePgDumpEndpoint(endpoint)
+    newSql = await fetchSql(sqlEndpoint, headers, { schema: values['sql-schema'], source: values['sql-source'] })
+  }
+
   const result = await main({
     newSdl,
+    newSql,
     docsRoot: values.docs,
     sourceRef: values['source-ref'],
     date: new Date().toISOString().slice(0, 10),
-    schemaFilename: values['schema-name']
+    schemaFilename: values['schema-name'],
+    sqlFilename: values['sql-name']
   })
   console.log(JSON.stringify(result, null, 2))
   writeGithubOutput({
     changed: String(result.changed),
     bump: result.bump ?? '',
-    version: result.version ?? ''
+    version: result.version ?? '',
+    'graphql-changed': String(result.graphqlChanged),
+    'sql-changed': String(result.sqlChanged)
   })
   return result
 }

@@ -6,6 +6,7 @@ import { buildSchema, graphqlSync } from 'graphql'
 import {
   classifyChanges,
   cli,
+  derivePgDumpEndpoint,
   formatChangelogBlock,
   main,
   parseHeader,
@@ -106,11 +107,23 @@ describe('formatChangelogBlock', () => {
     expect(out).not.toContain('### Removed')
   })
 
-  it('first-run шаблон, коли first=true', () => {
-    const out = formatChangelogBlock({ ...baseInput, first: true })
+  it('first-run шаблон, коли graphqlFirst=true', () => {
+    const out = formatChangelogBlock({ ...baseInput, graphqlFirst: true })
     expect(out).toContain('Початкове додавання GraphQL-схеми')
     expect(out).not.toContain('Оновлено GraphQL-схему')
     expect(out).not.toContain('Hasura')
+  })
+
+  it('додає рядок про SQL/ER при sqlChanged=true', () => {
+    const out = formatChangelogBlock({ ...baseInput, sqlChanged: true })
+    expect(out).toContain('Оновлено SQL-схему ER (`db@a1b2c3d`)')
+    expect(out).toContain('Оновлено GraphQL-схему (`db@a1b2c3d`)')
+  })
+
+  it('first-run SQL: "Початкове додавання SQL-схеми (ER)", без GraphQL-рядка коли GraphQL не змінювався', () => {
+    const out = formatChangelogBlock({ ...baseInput, graphqlChanged: false, sqlFirst: true })
+    expect(out).toContain('Початкове додавання SQL-схеми (ER)')
+    expect(out).not.toContain('Оновлено GraphQL-схему')
   })
 
   it('закінчується одним порожнім рядком (для коректного prepend)', () => {
@@ -176,6 +189,24 @@ describe('parseHeader', () => {
 
   it('кидає помилку без двокрапки', () => {
     expect(() => parseHeader('not-a-header')).toThrow(INVALID_HEADER_REGEX)
+  })
+})
+
+describe('derivePgDumpEndpoint', () => {
+  it('замінює /v1/graphql на /v1alpha1/pg_dump', () => {
+    expect(derivePgDumpEndpoint('https://api.example.com/v1/graphql')).toBe('https://api.example.com/v1alpha1/pg_dump')
+  })
+
+  it('зберігає base-path перед /v1/graphql', () => {
+    expect(derivePgDumpEndpoint('https://h.io/hasura/v1/graphql')).toBe('https://h.io/hasura/v1alpha1/pg_dump')
+  })
+
+  it('відкидає query та hash', () => {
+    expect(derivePgDumpEndpoint('https://h.io/v1/graphql?x=1#frag')).toBe('https://h.io/v1alpha1/pg_dump')
+  })
+
+  it('fallback на /v1alpha1/pg_dump, якщо шлях не закінчується /v1/graphql', () => {
+    expect(derivePgDumpEndpoint('https://h.io/graphql')).toBe('https://h.io/v1alpha1/pg_dump')
   })
 })
 
@@ -263,6 +294,79 @@ describe('main (e2e via fixtures)', () => {
     expect(existsSync(join(npmDir, 'schema/smart.graphql'))).toBe(true)
     expect(existsSync(join(npmDir, 'schema/maya.graphql'))).toBe(false)
   })
+
+  it('newSql first-run → пише npm/er/maya.sql, sqlChanged, SQL-рядок у CHANGELOG', async () => {
+    const { docsRoot, npmDir } = setupTmpDocs()
+    const result = await main({
+      newSdl: OLD_SDL, // GraphQL без змін
+      newSql: 'CREATE TABLE public.users (id int);\n',
+      docsRoot,
+      sourceRef: 'db@abc1234',
+      date: '2026-05-11'
+    })
+
+    expect(result.changed).toBe(true)
+    expect(result.bump).toBe('patch')
+    expect(result.graphqlChanged).toBe(false)
+    expect(result.sqlChanged).toBe(true)
+
+    expect(readFileSync(join(npmDir, 'er/maya.sql'), 'utf8')).toBe('CREATE TABLE public.users (id int);\n')
+    const changelog = readFileSync(join(npmDir, 'CHANGELOG.md'), 'utf8')
+    expect(changelog).toContain('Початкове додавання SQL-схеми (ER)')
+    expect(changelog).not.toContain('Оновлено GraphQL-схему')
+  })
+
+  it('SQL не змінився, GraphQL не змінився → changed=false', async () => {
+    const { docsRoot, npmDir } = setupTmpDocs()
+    mkdirSync(join(npmDir, 'er'), { recursive: true })
+    writeFileSync(join(npmDir, 'er/maya.sql'), 'CREATE TABLE public.users (id int);\n')
+
+    const result = await main({
+      newSdl: OLD_SDL,
+      newSql: 'CREATE TABLE public.users (id int);\n',
+      docsRoot,
+      sourceRef: 'db@abc1234',
+      date: '2026-05-11'
+    })
+
+    expect(result.changed).toBe(false)
+    expect(JSON.parse(readFileSync(join(npmDir, 'package.json'), 'utf8')).version).toBe('0.0.2')
+  })
+
+  it('GraphQL breaking + SQL змінився → bump minor, обидва файли оновлено', async () => {
+    const { docsRoot, npmDir } = setupTmpDocs()
+    mkdirSync(join(npmDir, 'er'), { recursive: true })
+    writeFileSync(join(npmDir, 'er/maya.sql'), 'CREATE TABLE public.users (id int);\n')
+
+    const result = await main({
+      newSdl: NEW_SDL,
+      newSql: 'CREATE TABLE public.users (id int, name text);\n',
+      docsRoot,
+      sourceRef: 'db@abc1234',
+      date: '2026-05-11'
+    })
+
+    expect(result.bump).toBe('minor')
+    expect(result.graphqlChanged).toBe(true)
+    expect(result.sqlChanged).toBe(true)
+    expect(readFileSync(join(npmDir, 'schema/maya.graphql'), 'utf8')).toBe(NEW_SDL)
+    expect(readFileSync(join(npmDir, 'er/maya.sql'), 'utf8')).toBe('CREATE TABLE public.users (id int, name text);\n')
+  })
+
+  it('кастомний sqlFilename — записує саме його', async () => {
+    const { docsRoot, npmDir } = setupTmpDocs()
+    await main({
+      newSdl: OLD_SDL,
+      newSql: 'CREATE TABLE public.t (id int);\n',
+      docsRoot,
+      sourceRef: 'db@abc1234',
+      date: '2026-05-11',
+      sqlFilename: 'smart.sql'
+    })
+
+    expect(existsSync(join(npmDir, 'er/smart.sql'))).toBe(true)
+    expect(existsSync(join(npmDir, 'er/maya.sql'))).toBe(false)
+  })
 })
 
 describe('cli (тільки args)', () => {
@@ -284,16 +388,20 @@ describe('cli (тільки args)', () => {
   }
 
   /**
-   * Стартує локальний mock GraphQL сервер з заданою SDL.
+   * Стартує локальний mock-сервер: GraphQL-інтроспект на /v1/graphql і Hasura pg_dump на /v1alpha1/pg_dump.
    * @param {string} sdl GraphQL SDL для побудови схеми
-   * @returns {string} URL запущеного сервера
+   * @param {string} [sql] SQL-дамп, який віддає pg_dump-роут
+   * @returns {string} URL GraphQL-ендпоінта запущеного сервера
    */
-  function startMockGraphql(sdl) {
+  function startMockGraphql(sdl, sql = 'CREATE TABLE public.t (id int);\n') {
     const schema = buildSchema(sdl)
     server = Bun.serve({
       port: 0,
       async fetch(req) {
         receivedHeaders = req.headers
+        if (new URL(req.url).pathname.endsWith('/v1alpha1/pg_dump')) {
+          return new Response(sql, { headers: { 'Content-Type': 'text/plain' } })
+        }
         const { query } = await req.json()
         const result = graphqlSync({ schema, source: query })
         return Response.json(result)
@@ -384,6 +492,33 @@ describe('cli (тільки args)', () => {
 
     const changelog = readFileSync(join(docsRoot, 'npm', 'CHANGELOG.md'), 'utf8')
     expect(changelog).toContain('(`unknown`)')
+  })
+
+  it('за замовчуванням тягне pg_dump і пише npm/er/maya.sql', async () => {
+    const docsRoot = setupBareDocs()
+    const url = startMockGraphql(NEW_SDL, 'CREATE TABLE public.acc (id int);\n')
+    const result = await cli(['--endpoint', url, '--docs', docsRoot])
+
+    expect(result.sqlChanged).toBe(true)
+    expect(readFileSync(join(docsRoot, 'npm', 'er', 'maya.sql'), 'utf8')).toBe('CREATE TABLE public.acc (id int);\n')
+  })
+
+  it('--skip-sql не тягне pg_dump і не пише SQL-файл', async () => {
+    const docsRoot = setupBareDocs()
+    const url = startMockGraphql(NEW_SDL)
+    const result = await cli(['--endpoint', url, '--docs', docsRoot, '--skip-sql'])
+
+    expect(result.sqlChanged).toBe(false)
+    expect(existsSync(join(docsRoot, 'npm', 'er', 'maya.sql'))).toBe(false)
+  })
+
+  it('--sql-name кладе дамп у вказаний файл', async () => {
+    const docsRoot = setupBareDocs()
+    const url = startMockGraphql(NEW_SDL)
+    await cli(['--endpoint', url, '--docs', docsRoot, '--sql-name', 'smart.sql'])
+
+    expect(existsSync(join(docsRoot, 'npm', 'er', 'smart.sql'))).toBe(true)
+    expect(existsSync(join(docsRoot, 'npm', 'er', 'maya.sql'))).toBe(false)
   })
 
   it('викидає якщо не передано --endpoint', () => {

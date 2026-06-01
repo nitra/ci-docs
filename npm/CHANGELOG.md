@@ -4,6 +4,19 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/), нумерація — [SemVer](https://semver.org/lang/uk/).
 
+## [1.1.0] - 2026-06-01
+
+### Added
+
+- `sync-schema` тепер також експортує **SQL-схему БД** через Hasura pg_dump-ендпоінт і зберігає її у `npm/er/<sql-name>` (default `maya.sql`) — поряд із GraphQL SDL у `npm/schema/`.
+- Зміна SQL **або** GraphQL піднімає версію й додає запис у CHANGELOG (SQL — текстовий diff, патч-bump; GraphQL — як раніше через `graphql-inspector`).
+- Нові CLI-прапори: `--sql-name`, `--sql-endpoint` (default виводиться з `--endpoint`), `--sql-schema` (default `public`), `--sql-source` (default `default`), `--skip-sql`.
+- Експортовані `fetchSql()` та `derivePgDumpEndpoint()`; `main()`/`cli()` повертають додаткові поля `graphqlChanged`/`sqlChanged`, а `GITHUB_OUTPUT` — ключі `graphql-changed`/`sql-changed`.
+
+### Fixed
+
+- `bin["ci-shared"]` позбувся префікса `./` (`./src/cli.mjs` → `src/cli.mjs`): npm@11 вважав значення з `./` невалідним і вирізав `bin` із опублікованого пакета (`npm warn publish "bin[ci-shared]" script name … was invalid and removed`).
+
 ## [1.0.1] - 2026-05-13
 
 ### Changed
