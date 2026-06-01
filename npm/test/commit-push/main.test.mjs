@@ -72,6 +72,50 @@ describe('commit-push main()', () => {
     expect(git(remoteRepo, ['log', '-1', '--pretty=%ae', 'main'])).toBe('sync-bot[bot]@users.noreply.github.com')
   })
 
+  it('--dir стейджить директорію рекурсивно (всі файли під npm/er)', () => {
+    const { remoteRepo, workRepo } = setup()
+    mkdirSync(join(workRepo, 'npm/er'), { recursive: true })
+    writeFileSync(join(workRepo, 'npm/er/smart.sql'), 'CREATE TABLE t (id int);\n')
+    writeFileSync(join(workRepo, 'npm/er/smart.md'), '```mermaid\nerDiagram\n```\n')
+
+    const result = main({
+      repo: workRepo,
+      dirs: ['npm/er'],
+      message: 'chore: add er dir',
+      ...AUTHOR
+    })
+
+    expect(result.committed).toBe(true)
+    const tree = git(remoteRepo, ['ls-tree', '-r', '--name-only', 'main'])
+    expect(tree).toContain('npm/er/smart.sql')
+    expect(tree).toContain('npm/er/smart.md')
+  })
+
+  it('files + dirs стейджаться разом', () => {
+    const { remoteRepo, workRepo } = setup()
+    mkdirSync(join(workRepo, 'npm/er'), { recursive: true })
+    writeFileSync(join(workRepo, 'npm/er/maya.sql'), 'CREATE TABLE t (id int);\n')
+    writeFileSync(join(workRepo, 'npm/schema.graphql'), 'type Query { x: Int }\n')
+
+    const result = main({
+      repo: workRepo,
+      files: ['npm/schema.graphql'],
+      dirs: ['npm/er'],
+      message: 'chore: file + dir',
+      ...AUTHOR
+    })
+
+    expect(result.committed).toBe(true)
+    const tree = git(remoteRepo, ['ls-tree', '-r', '--name-only', 'main'])
+    expect(tree).toContain('npm/er/maya.sql')
+    expect(tree).toContain('npm/schema.graphql')
+  })
+
+  it('ні files, ні dirs → кидає помилку', () => {
+    // eslint-disable-next-line sonarjs/publicly-writable-directories -- /tmp/x is an intentionally invalid path; main() throws before any FS access
+    expect(() => main({ repo: '/tmp/x', message: 'm', ...AUTHOR })).toThrow('At least one --file or --dir is required')
+  })
+
   it('коли файли без змін → committed=false, нічого не пушить', () => {
     const { remoteRepo, workRepo } = setup()
     const remoteShaBefore = git(remoteRepo, ['rev-parse', 'main'])
@@ -183,7 +227,7 @@ describe('commit-push cli()', () => {
     expect(git(remoteRepo, ['log', '-1', '--pretty=%s', 'main'])).toBe('add a and b')
   })
 
-  it('кидає помилку коли немає --file', () => {
+  it('кидає помилку коли немає ні --file, ні --dir', () => {
     expect(() =>
       cli([
         '--repo',
@@ -195,7 +239,29 @@ describe('commit-push cli()', () => {
         '--author-email',
         'b'
       ])
-    ).toThrow('--file is required')
+    ).toThrow('At least one --file or --dir is required')
+  })
+
+  it('--dir у cli стейджить директорію', () => {
+    setup()
+    mkdirSync(join(workRepo, 'npm/er'), { recursive: true })
+    writeFileSync(join(workRepo, 'npm/er/x.sql'), 'CREATE TABLE x (id int);\n')
+
+    const result = cli([
+      '--repo',
+      workRepo,
+      '--message',
+      'add er',
+      '--dir',
+      'npm/er',
+      '--author-name',
+      'bot[bot]',
+      '--author-email',
+      'bot@x'
+    ])
+
+    expect(result.committed).toBe(true)
+    expect(git(remoteRepo, ['ls-tree', '-r', '--name-only', 'main'])).toContain('npm/er/x.sql')
   })
 
   it('кидає помилку на брак --repo', () => {

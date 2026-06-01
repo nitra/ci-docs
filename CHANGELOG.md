@@ -4,6 +4,13 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/), нумерація — [SemVer](https://semver.org/lang/uk/).
 
+## [0.0.3] - 2026-06-01
+
+### Added
+
+- `.jscpdignore` (`.claude/`, `node_modules/`) — `jscpd` більше не падає на залишкових агент-worktree-копіях під `.claude/worktrees/`.
+- Нові словникові статті у `.cspell.json` для термінології sync-schema/SQL/DBML (`bytea`, `macaddr`, `timetz`, `bigserial`, `pathspecs`, `воркфлоу` тощо).
+
 ## [0.0.2] - 2026-05-18
 
 ### Added

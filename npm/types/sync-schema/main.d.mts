@@ -170,11 +170,11 @@ export function main({
  *   --docs <path>           корінь docs-репо (default './docs')
  *   --schema-name <file>    назва файлу в `npm/schema/` (default 'maya.graphql')
  *   --source-ref <ref>      текст, що йде у CHANGELOG як посилання на джерело (default 'unknown')
- *   --sql-name <file>       назва SQL-файлу в `npm/er/` (default 'maya.sql')
+ *   --sql                   увімкнути експорт SQL-дампу через Hasura pg_dump (за замовчуванням вимкнено)
+ *   --sql-name <file>       назва SQL-файлу в `npm/er/` (default 'maya.sql'; має сенс лише з --sql)
  *   --sql-endpoint <url>    URL Hasura pg_dump-ендпоінта (default — виводиться з --endpoint)
  *   --sql-schema <name>     pg-схема для дампу (default 'public')
  *   --sql-source <name>     Hasura-джерело для дампу (default 'default')
- *   --skip-sql              не тягнути/не синкати SQL (тільки GraphQL)
  * @param {string[]} [argv] аргументи (без 'node' та script path). Default — process.argv.slice(2).
  * @returns {Promise<{changed: boolean, bump: string|null, version: string|null, graphqlChanged: boolean, sqlChanged: boolean}>} результат main()
  */

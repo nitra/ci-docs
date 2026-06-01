@@ -4,6 +4,9 @@ import { env } from 'node:process'
 import { parseArgs } from 'node:util'
 import { buildSchema, buildClientSchema, printSchema, getIntrospectionQuery } from 'graphql'
 import { diff } from '@graphql-inspector/core'
+import { sqlToDbml } from './er.mjs'
+
+const RE_SQL_EXT = /\.sql$/
 
 const REMOVAL_TYPES = new Set([
   'FIELD_REMOVED',
@@ -339,6 +342,7 @@ export async function main({
   if (sqlChanged) {
     mkdirSync(dirname(oldSqlPath), { recursive: true })
     writeFileSync(oldSqlPath, newSql)
+    writeFileSync(oldSqlPath.replace(RE_SQL_EXT, '.dbml'), sqlToDbml(newSql))
   }
 
   return { changed: true, bump, version, graphqlChanged, sqlChanged }
@@ -356,11 +360,11 @@ export async function main({
  *   --docs <path>           корінь docs-репо (default './docs')
  *   --schema-name <file>    назва файлу в `npm/schema/` (default 'maya.graphql')
  *   --source-ref <ref>      текст, що йде у CHANGELOG як посилання на джерело (default 'unknown')
- *   --sql-name <file>       назва SQL-файлу в `npm/er/` (default 'maya.sql')
+ *   --sql                   увімкнути експорт SQL-дампу через Hasura pg_dump (за замовчуванням вимкнено)
+ *   --sql-name <file>       назва SQL-файлу в `npm/er/` (default 'maya.sql'; має сенс лише з --sql)
  *   --sql-endpoint <url>    URL Hasura pg_dump-ендпоінта (default — виводиться з --endpoint)
  *   --sql-schema <name>     pg-схема для дампу (default 'public')
  *   --sql-source <name>     Hasura-джерело для дампу (default 'default')
- *   --skip-sql              не тягнути й не синхронізувати SQL (тільки GraphQL)
  * @param {string[]} [argv] аргументи (без 'node' та script path). Default — process.argv.slice(2).
  * @returns {Promise<{changed: boolean, bump: string|null, version: string|null, graphqlChanged: boolean, sqlChanged: boolean}>} результат main()
  */
@@ -373,11 +377,11 @@ export async function cli(argv = process.argv.slice(2)) {
       docs: { type: 'string', default: './docs' },
       'schema-name': { type: 'string', default: 'maya.graphql' },
       'source-ref': { type: 'string', default: 'unknown' },
+      sql: { type: 'boolean', default: false },
       'sql-name': { type: 'string', default: 'maya.sql' },
       'sql-endpoint': { type: 'string' },
       'sql-schema': { type: 'string', default: 'public' },
-      'sql-source': { type: 'string', default: 'default' },
-      'skip-sql': { type: 'boolean', default: false }
+      'sql-source': { type: 'string', default: 'default' }
     },
     allowPositionals: false,
     strict: true
@@ -392,7 +396,7 @@ export async function cli(argv = process.argv.slice(2)) {
   const newSdl = await fetchSdl(endpoint, headers)
 
   let newSql = null
-  if (!values['skip-sql']) {
+  if (values.sql) {
     const sqlEndpoint = values['sql-endpoint'] ?? derivePgDumpEndpoint(endpoint)
     newSql = await fetchSql(sqlEndpoint, headers, { schema: values['sql-schema'], source: values['sql-source'] })
   }

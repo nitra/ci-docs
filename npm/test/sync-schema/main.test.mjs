@@ -494,28 +494,28 @@ describe('cli (тільки args)', () => {
     expect(changelog).toContain('(`unknown`)')
   })
 
-  it('за замовчуванням тягне pg_dump і пише npm/er/maya.sql', async () => {
-    const docsRoot = setupBareDocs()
-    const url = startMockGraphql(NEW_SDL, 'CREATE TABLE public.acc (id int);\n')
-    const result = await cli(['--endpoint', url, '--docs', docsRoot])
-
-    expect(result.sqlChanged).toBe(true)
-    expect(readFileSync(join(docsRoot, 'npm', 'er', 'maya.sql'), 'utf8')).toBe('CREATE TABLE public.acc (id int);\n')
-  })
-
-  it('--skip-sql не тягне pg_dump і не пише SQL-файл', async () => {
+  it('за замовчуванням (без --sql) не тягне pg_dump і не пише SQL-файл', async () => {
     const docsRoot = setupBareDocs()
     const url = startMockGraphql(NEW_SDL)
-    const result = await cli(['--endpoint', url, '--docs', docsRoot, '--skip-sql'])
+    const result = await cli(['--endpoint', url, '--docs', docsRoot])
 
     expect(result.sqlChanged).toBe(false)
     expect(existsSync(join(docsRoot, 'npm', 'er', 'maya.sql'))).toBe(false)
   })
 
-  it('--sql-name кладе дамп у вказаний файл', async () => {
+  it('--sql тягне pg_dump і пише npm/er/maya.sql', async () => {
+    const docsRoot = setupBareDocs()
+    const url = startMockGraphql(NEW_SDL, 'CREATE TABLE public.acc (id int);\n')
+    const result = await cli(['--endpoint', url, '--docs', docsRoot, '--sql'])
+
+    expect(result.sqlChanged).toBe(true)
+    expect(readFileSync(join(docsRoot, 'npm', 'er', 'maya.sql'), 'utf8')).toBe('CREATE TABLE public.acc (id int);\n')
+  })
+
+  it('--sql --sql-name кладе дамп у вказаний файл', async () => {
     const docsRoot = setupBareDocs()
     const url = startMockGraphql(NEW_SDL)
-    await cli(['--endpoint', url, '--docs', docsRoot, '--sql-name', 'smart.sql'])
+    await cli(['--endpoint', url, '--docs', docsRoot, '--sql', '--sql-name', 'smart.sql'])
 
     expect(existsSync(join(docsRoot, 'npm', 'er', 'smart.sql'))).toBe(true)
     expect(existsSync(join(docsRoot, 'npm', 'er', 'maya.sql'))).toBe(false)

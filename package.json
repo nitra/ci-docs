@@ -1,6 +1,6 @@
 {
   "name": "nitra-ci-shared",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "nitra ci-shared components",
   "author": "v@nitra.ai",
   "workspaces": [

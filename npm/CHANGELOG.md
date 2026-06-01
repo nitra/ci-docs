@@ -4,14 +4,23 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/), нумерація — [SemVer](https://semver.org/lang/uk/).
 
+## [1.2.0] - 2026-06-01
+
+### Added
+
+- `sqlToDbml(sql)` — конвертує PostgreSQL DDL (pg_dump `--schema-only`) у **DBML** (`Table` + standalone `Ref:`, підтримка composite PK/FK). При `sqlChanged` `sync-schema` тепер автоматично записує `npm/er/<name>.dbml` поруч із `npm/er/<name>.sql` — готове до перегляду в Azimutt / dbdocs.
+- `parseFks` додатково захоплює referenced-колонки (`toCols`).
+- `sqlToMermaid(sql)` лишається експортованим (Mermaid `erDiagram`), але в пайплайн більше не підключений.
+
 ## [1.1.0] - 2026-06-01
 
 ### Added
 
-- `sync-schema` тепер також експортує **SQL-схему БД** через Hasura pg_dump-ендпоінт і зберігає її у `npm/er/<sql-name>` (default `maya.sql`) — поряд із GraphQL SDL у `npm/schema/`.
+- `sync-schema` уміє також експортувати **SQL-схему БД** через Hasura pg_dump-ендпоінт і зберігати її у `npm/er/<sql-name>` (default `maya.sql`) — поряд із GraphQL SDL у `npm/schema/`. Вмикається прапором **`--sql`** (за замовчуванням вимкнено, тож наявні `^1.0.0`-споживачі не зачеплені).
 - Зміна SQL **або** GraphQL піднімає версію й додає запис у CHANGELOG (SQL — текстовий diff, патч-bump; GraphQL — як раніше через `graphql-inspector`).
-- Нові CLI-прапори: `--sql-name`, `--sql-endpoint` (default виводиться з `--endpoint`), `--sql-schema` (default `public`), `--sql-source` (default `default`), `--skip-sql`.
+- Нові CLI-прапори: `--sql`, `--sql-name`, `--sql-endpoint` (default виводиться з `--endpoint`), `--sql-schema` (default `public`), `--sql-source` (default `default`).
 - Експортовані `fetchSql()` та `derivePgDumpEndpoint()`; `main()`/`cli()` повертають додаткові поля `graphqlChanged`/`sqlChanged`, а `GITHUB_OUTPUT` — ключі `graphql-changed`/`sql-changed`.
+- ⚠️ Для пушу SQL-файлу додайте його у `--file` кроку `commit-push` (наприклад `--file npm/er/smart.sql`) — інакше зміна версії піде без самого SQL.
 
 ### Fixed
 
