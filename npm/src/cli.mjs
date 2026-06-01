@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * `@nitra/ci-docs` — CLI-диспатчер.
+ * `@nitra/ci-shared` — CLI-диспатчер.
  *
- * Запуск: `npx -y \@nitra/ci-docs <subcommand> [args...]`
+ * Запуск: `npx -y \@nitra/ci-shared <subcommand> [args...]`
  *
  * Доступні subcommands:
  *   sync-schema  — інтроспект GraphQL-ендпоінта → bump → CHANGELOG → запис SDL
@@ -17,12 +17,12 @@ const SUBCOMMANDS = {
 const [subcommand, ...rest] = process.argv.slice(2)
 
 if (!subcommand || subcommand === '--help' || subcommand === '-h') {
-  console.log(`Usage: ci-docs <subcommand> [args...]
+  console.log(`Usage: ci-shared <subcommand> [args...]
 
 Subcommands:
   ${Object.keys(SUBCOMMANDS).join('\n  ')}
 
-Run \`ci-docs <subcommand> --help\` for subcommand-specific options.`)
+Run \`ci-shared <subcommand> --help\` for subcommand-specific options.`)
   process.exitCode = subcommand ? 0 : 2
 } else {
   const loader = SUBCOMMANDS[subcommand]

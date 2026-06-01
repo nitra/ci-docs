@@ -1,7 +1,7 @@
 ---
 session: dedad58b-1d78-4e90-b22e-de3fdc625173
 captured: 2026-05-18T16:40:49+03:00
-transcript: /Users/vitalii/.claude/projects/-Users-vitalii-www-nitra-ci-docs/dedad58b-1d78-4e90-b22e-de3fdc625173.jsonl
+transcript: /Users/vitalii/.claude/projects/-Users-vitalii-www-nitra-ci-shared/dedad58b-1d78-4e90-b22e-de3fdc625173.jsonl
 ---
 
 NONE

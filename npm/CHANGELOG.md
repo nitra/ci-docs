@@ -21,11 +21,11 @@
 
 ### Added
 
-- CLI `ci-docs sync-schema` — інтроспектить **будь-який** GraphQL-ендпоінт, рахує SemVer-bump через `graphql-inspector`, оновлює CHANGELOG і пише SDL у `npm/schema/`.
+- CLI `ci-shared sync-schema` — інтроспектить **будь-який** GraphQL-ендпоінт, рахує SemVer-bump через `graphql-inspector`, оновлює CHANGELOG і пише SDL у `npm/schema/`.
   - `--endpoint <url>` (обовʼязковий) — GraphQL-ендпоінт.
   - `--header "K: V"` (повторюваний) — будь-які HTTP-заголовки (Hasura admin secret, Bearer token тощо).
   - `--docs <path>` (default `./docs`), `--schema-name <file>` (default `maya.graphql`), `--source-ref <text>` (default `unknown`).
-- CLI `ci-docs commit-push` — git add/commit/push для перелічених файлів.
+- CLI `ci-shared commit-push` — git add/commit/push для перелічених файлів.
   - `--repo <path>`, `--message <msg>`, `--file <path>` (повторюваний), `--author-name`, `--author-email` — обовʼязкові.
   - `--branch <name>` (default `main`), `--remote <name>` (default `origin`) — опціональні.
   - Якщо staged-зміни відсутні, ні коміту, ні push не буде.

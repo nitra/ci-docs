@@ -1,19 +1,19 @@
 {
-  "name": "@nitra/ci-docs",
+  "name": "@nitra/ci-shared",
   "version": "1.0.1",
   "description": "Nitra CI tooling: sync GraphQL schema to a docs npm package (and more to come).",
-  "homepage": "https://github.com/nitra/ci-docs",
+  "homepage": "https://github.com/nitra/ci-shared",
   "bugs": {
-    "url": "https://github.com/nitra/ci-docs/issues"
+    "url": "https://github.com/nitra/ci-shared/issues"
   },
   "license": "ISC",
   "author": "v@nitra.ai",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nitra/ci-docs.git"
+    "url": "git+https://github.com/nitra/ci-shared.git"
   },
   "bin": {
-    "ci-docs": "./src/cli.mjs"
+    "ci-shared": "./src/cli.mjs"
   },
   "files": [
     "src",
