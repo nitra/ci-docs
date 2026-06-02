@@ -205,6 +205,7 @@ export function sqlToDbml(sql) {
 
   const blocks = []
   for (const [name, cols] of tables) {
+    if (cols.length === 0) continue
     const lines = [`Table ${dbmlId(name)} {`]
     for (const col of cols) lines.push(`  ${dbmlId(col.name)} ${col.type}${col.pk ? ' [pk]' : ''}`)
     lines.push('}')

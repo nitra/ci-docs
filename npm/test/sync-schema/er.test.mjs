@@ -168,6 +168,22 @@ ALTER TABLE ONLY public."user"
     expect(out).toContain('Ref: user.role_id > role.id')
   })
 
+  it('skips tables left with no columns (invalid column-name artifacts)', () => {
+    const sql = `
+CREATE TABLE public.pos_info (
+    "?column?" text COLLATE pg_catalog."C"
+);
+
+CREATE TABLE public.role (
+    id integer NOT NULL,
+    CONSTRAINT role_pkey PRIMARY KEY (id)
+);
+`
+    const out = sqlToDbml(sql)
+    expect(out).not.toContain('pos_info')
+    expect(out).toContain('Table role {')
+  })
+
   it('renders composite FK with parenthesized column lists', () => {
     const sql = `
 CREATE TABLE public.parent (

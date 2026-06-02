@@ -4,6 +4,12 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/), нумерація — [SemVer](https://semver.org/lang/uk/).
 
+## [0.0.4] - 2026-06-02
+
+### Fixed
+
+- `@nitra/ci-shared` піднято до `1.2.1`: `sqlToDbml` більше не емітить порожні `Table`-блоки (фікс невалідного DBML / парсера `code 3018`).
+
 ## [0.0.3] - 2026-06-01
 
 ### Added

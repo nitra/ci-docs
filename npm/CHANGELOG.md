@@ -4,6 +4,12 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/), нумерація — [SemVer](https://semver.org/lang/uk/).
 
+## [1.2.1] - 2026-06-02
+
+### Fixed
+
+- `sqlToDbml` більше не емітить порожні `Table`-блоки (`Table X {}`) для таблиць, що лишилися без жодної колонки (напр. артефакт `"?column?"` від `CREATE TABLE … AS SELECT`). Симетрично до `sqlToMermaid`. Виправляє невалідний DBML і падіння парсера `code 3018 "A Table must have at least one column"`.
+
 ## [1.2.0] - 2026-06-01
 
 ### Added
