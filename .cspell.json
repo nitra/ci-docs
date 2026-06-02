@@ -10,7 +10,8 @@
     "*.svg",
     ".vscode",
     "report",
-    "yarn.lock"
+    "yarn.lock",
+    "docs/adr/**"
   ],
   "import": ["@nitra/cspell-dict/cspell-ext.json"],
   "words": [

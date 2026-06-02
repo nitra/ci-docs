@@ -5,6 +5,12 @@
   "categories": {},
   "rules": {
     "e18e/prefer-includes": "error",
+    "e18e/prefer-string-starts-ends-with": "deny",
+    "e18e/prefer-array-from-map": "deny",
+    "e18e/prefer-timer-args": "deny",
+    "e18e/prefer-static-regex": "deny",
+    "e18e/prefer-date-now": "deny",
+    "e18e/prefer-regex-test": "deny",
     "array-callback-return": "deny",
     "no-new-wrappers": "deny",
     "import/no-named-as-default": "deny",
@@ -383,5 +389,5 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": ["**/schema.graphql", "**/auto-imports.d.ts"]
+  "ignorePatterns": ["**/schema.graphql", "**/auto-imports.d.ts", "npm/types/**", "demo/node/rules-demo.js"]
 }
