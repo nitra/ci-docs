@@ -34,6 +34,11 @@ mkdir -p "$ADR_DIR" "$LOG_DIR"
 
 log() { printf '%s %s\n' "$(date -Iseconds)" "$*" >> "$LOG"; }
 
+# Підвантажуємо спільний helper (sourcing — не sub-shell, функції видимі поточному скрипту).
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=lib/tooling-only.sh disable=SC1091
+. "$SCRIPT_DIR/lib/tooling-only.sh"
+
 log "fired: $SESSION_ID"
 
 if [[ -z "$TRANSCRIPT_PATH" || ! -f "$TRANSCRIPT_PATH" ]]; then
@@ -44,9 +49,12 @@ fi
 # Extract role + text + thinking + tool_use names from JSONL transcript.
 # We keep reasoning/decisions visible to the analyzer but drop large tool outputs.
 TRANSCRIPT=$(jq -r '
-  select(.type == "user" or .type == "assistant")
+  select(
+    .type == "user" or .type == "assistant"
+    or .role == "user" or .role == "assistant"
+  )
   | .message as $m
-  | ($m.role // .type) as $role
+  | ($m.role // .role // .type) as $role
   | ($m.content
       | if type == "string" then .
         else (
@@ -79,7 +87,31 @@ if (( ${#TRANSCRIPT} > MAX_CHARS )); then
 fi
 
 if [[ -z "$TRANSCRIPT" ]]; then
+  log "  → empty transcript after jq (Claude Code: .type; Cursor Agent: .role)"
   exit 0
+fi
+
+# Structural skip: якщо в сесії змінювалися лише tooling-файли — не викликаємо LLM.
+# ENV `ADR_NORMALIZE_SKIP_TOOLING_ONLY=0` вимикає скіп.
+if [[ "${ADR_NORMALIZE_SKIP_TOOLING_ONLY:-1}" = "1" ]]; then
+  CHANGED_FILES=$(jq -r '
+    select(.type == "assistant" or .role == "assistant")
+    | .message as $m
+    | ($m.content // [])
+    | if type == "array" then
+        map(select(.type == "tool_use" and (.name == "Edit" or .name == "Write" or .name == "MultiEdit"))
+            | .input.file_path // empty)
+        | .[]
+      else empty end
+  ' "$TRANSCRIPT_PATH" 2>/dev/null | sort -u || true)
+
+  if [[ -n "$CHANGED_FILES" ]]; then
+    if printf '%s\n' "$CHANGED_FILES" | is_tooling_only_change "$PROJECT_ROOT"; then
+      log "  → skipping ADR capture: tooling-only session"
+      log "    files: $(printf '%s' "$CHANGED_FILES" | tr '\n' ' ')"
+      exit 0
+    fi
+  fi
 fi
 
 PROMPT=$(cat <<'EOF'

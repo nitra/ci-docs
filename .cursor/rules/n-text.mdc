@@ -1,7 +1,7 @@
 ---
 description: Обробка та перевірка текстових файлів, oxfmt, cspell, shellcheck (sh), dotenv-linter (.env*), markdownlint-cli2, v8r, CI
 alwaysApply: true
-version: '1.28'
+version: '1.30'
 ---
 
 **oxfmt** (`.oxfmtrc.json`, редактор), **cspell**, **shellcheck** (tracked `*.sh` у `lint-text`), **[dotenv-linter](https://dotenv-linter.github.io/)** (`.env*` у `lint-text`), **markdownlint-cli2**, **[v8r](https://chris48s.github.io/v8r/)** ([Schema Store](https://www.schemastore.org/)), розширення **DavidAnson.vscode-markdownlint** / **timonwong.shellcheck**, workflow **`lint-text`**.
@@ -24,11 +24,7 @@ version: '1.28'
 
 ```json
 {
-  "recommendations": [
-    "DavidAnson.vscode-markdownlint",
-    "oxc.oxc-vscode",
-    "timonwong.shellcheck"
-  ]
+  "recommendations": ["DavidAnson.vscode-markdownlint", "oxc.oxc-vscode", "timonwong.shellcheck"]
 }
 ```
 
@@ -140,11 +136,7 @@ version: '1.28'
   "tabWidth": 2,
   "useTabs": false,
   "printWidth": 120,
-  "ignorePatterns": [
-    "**/hasura/metadata/**",
-    "**/schema.graphql",
-    "**/auto-imports.d.ts"
-  ]
+  "ignorePatterns": ["**/hasura/metadata/**", "**/schema.graphql", "**/auto-imports.d.ts"]
 }
 ```
 
@@ -241,7 +233,9 @@ version: '1.28'
 
 Додай workflow `.github/workflows/lint-text.yml`:
 
-```yaml title=".github/workflows/lint-text.yml"
+- Канон: `lint-text.yml`:
+
+```yaml
 name: Lint Text
 
 on:
@@ -293,11 +287,19 @@ jobs:
 
       - uses: ./.github/actions/setup-bun-deps
 
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Install dotenv-linter
+        run: >-
+          curl -sSfL https://git.io/JLbXn
+          | sh -s -- -b /usr/local/bin
+
       - name: Lint text
         run: bun run lint-text
 ```
 
-Перед **`./.github/actions/setup-bun-deps`** — **`actions/checkout@v6`** (див. **ga.mdc**). Composite: Node 24, Bun, кеш, `bun install --frozen-lockfile`.
+Перед **`./.github/actions/setup-bun-deps`** — **`actions/checkout@v6`** (див. **ga.mdc**). Після composite — кроки **`Install shellcheck`** (apt) і **`Install dotenv-linter`** (curl), бо `n-cursor lint-text` вимагає обидва бінарники в PATH; на ubuntu-latest shellcheck часто вже є, dotenv-linter — ні. Composite: Node 24, Bun, кеш, `bun install --frozen-lockfile`.
 
 Не дублюй окремий workflow з тими самими кроками cspell/markdownlint.
 
@@ -309,7 +311,7 @@ jobs:
 {
   "version": "0.2",
   "language": "nitra",
-  "ignorePaths": ["**/node_modules/**", "**/vscode-extension/**", "**/.git/**", ".vscode", "report", "*.svg", "**/k8s/**/*.yaml"],
+  "ignorePaths": ["**/node_modules/**", "**/vscode-extension/**", "**/.git/**", ".vscode", "report", "*.svg", "**/k8s/**/*.yaml", "docs/adr/**"],
   "import": ["@nitra/cspell-dict/cspell-ext.json"],
   "words": []
 }
@@ -327,7 +329,8 @@ jobs:
     ".vscode",
     "report",
     "*.svg",
-    "**/k8s/**/*.yaml"
+    "**/k8s/**/*.yaml",
+    "docs/adr/**"
   ]
 }
 ```. Обовʼязковий запис у `import`: `.cspell.json`:
@@ -345,6 +348,8 @@ jobs:
   }
 }
 ```.
+
+`docs/adr/**` у канонічному `ignorePaths` — машинно-генеровані MADR-документи (драфти `capture-decisions.sh` + clean-ADR-и після `normalize-decisions.sh`). cspell-перевірка там безглузда: чернетка стирається наступним прогоном хук-ланцюжка, а будь-яка ручна правка правопису перезаписується. Локальні розширення `ignorePaths` дозволені — це лише мінімум.
 
 ```json title="package.json"
 {
@@ -382,7 +387,7 @@ jobs:
 {
   "version": "0.2",
   "language": "en,uk,ru-ru,nitra",
-  "ignorePaths": ["**/node_modules/**", "**/vscode-extension/**", "**/.git/**", ".vscode", "report", "*.svg", "**/k8s/**/*.yaml"],
+  "ignorePaths": ["**/node_modules/**", "**/vscode-extension/**", "**/.git/**", ".vscode", "report", "*.svg", "**/k8s/**/*.yaml", "docs/adr/**"],
   "import": ["@nitra/cspell-dict/cspell-ext.json"],
   "words": []
 }
@@ -412,4 +417,4 @@ kebab-case
 
 ## Перевірка
 
-`npx @nitra/cursor check text` (охоплює oxfmt, cspell, shellcheck у `lint-text`, markdownlint, v8r, CI для `lint-text`)
+`npx @nitra/cursor fix text` (охоплює oxfmt, cspell, shellcheck у `lint-text`, markdownlint, v8r, CI для `lint-text`). Зокрема падає, якщо у корені є `.prettierignore`, `.prettierrc*`, `prettier.config.*` або у `package.json#scripts` зустрічається команда з `prettier` — Prettier повністю заборонено, форматування лише через **oxfmt**.

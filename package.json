@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@nitra/cspell-dict": "^2.1.0",
-    "@nitra/cursor": "^1.13.34",
+    "@nitra/cursor": "^3.14.1",
     "@nitra/eslint-config": "^3.9.2"
   },
   "engines": {

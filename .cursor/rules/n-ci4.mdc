@@ -1,7 +1,7 @@
 ---
-description: Архітектурна документація продукту — Markdown як джерело істини; рекомендований стек arc42 + Diátaxis + ADR (MADR v4, формат описаний у правилі `adr`) + C4 як набір нотацій; гібридна модель manual + autogen-зон, що регенеруються з accepted ADR; MkDocs Material як viewer з collapsible engineer-блоками для змішаної аудиторії
+description: Архітектурна документація продукту — Markdown як джерело істини; рекомендований стек arc42 + Diátaxis + ADR (MADR v4, формат описаний у правилі `adr`) + C4 як набір нотацій; гібридна модель manual + autogen-зон, що регенеруються з accepted ADR; Zed + marksman LSP як viewer без site-generator-а, portable subset (CommonMark + GFM + Mermaid + KaTeX), collapsible engineer-блоки через нативний `<details>`; рекомендоване VSCode-розширення `arr.marksman` для контрибʼюторів поза Zed; `.marksman.toml` авто-створюється у корені проєкту з canonical baseline
 alwaysApply: true
-version: '2.0'
+version: '3.2'
 ---
 
 Архітектурна документація проєкту живе у Markdown поряд із кодом. Це не довідник «для людей із порталу архітектора» — це **джерело істини**, з якого LLM-агент і людина читають намір системи перед будь-якою зміною коду. Тому правила нижче — не оформлення, а робочий процес: який стек використовуємо, як зберігаємо рішення, як автоматично перегенеровуємо проекції з ADR і як рендеримо для змішаної аудиторії (менеджери + інженери + ops).
@@ -30,7 +30,7 @@ RAG витягує **фрагменти**, не цілі документи. Т�
 
 ## Docs-as-Code
 
-Документація живе у Git поруч із кодом, проходить **той самий Code Review**, версіонується і автоматично перевіряється у CI (лінтери Markdown, валідатори посилань, `npx @nitra/cursor check`). Биті посилання й документація, що «не компілюється», — **блокуючий баг**, не косметика.
+Документація живе у Git поруч із кодом, проходить **той самий Code Review**, версіонується і автоматично перевіряється у CI (лінтери Markdown, валідатори посилань, `npx @nitra/cursor fix`). Биті посилання й документація, що «не компілюється», — **блокуючий баг**, не косметика.
 
 ## Трасування як документація недетермінованої поведінки
 
@@ -47,7 +47,7 @@ RAG витягує **фрагменти**, не цілі документи. Т�
 
 Доповнюємо **під domain**:
 
-- **DDD Context Maps** — коли є >1 bounded context (типово для multi-agent: agents, orchestration, memory, tooling). Одна Mermaid-діаграма в `explanation/architecture.md`, ховається під `??? engineer`.
+- **DDD Context Maps** — коли є >1 bounded context (типово для multi-agent: agents, orchestration, memory, tooling). Одна Mermaid-діаграма в `explanation/architecture.md`, ховається під `<details><summary><strong>Engineer:</strong> Context Map</summary>`.
 - **EventModeling** — для event-driven систем (агентські pipeline, CQRS, Event Sourcing). Структура: trigger → command → event → read model. Читається менеджером як наратив, інженером — як креслення.
 - **Business Capability Map** — верхньорівневий manager-overview. Autogen через семантичну класифікацію accepted ADR за тематикою.
 - **Wardley Map** — стратегічний артефакт для board/інвесторів. Manual, не autogen. Квартальне оновлення. Живе в `explanation/strategy.md`.
@@ -95,7 +95,7 @@ docs/
 - **Date** — рядок `**Date:** YYYY-MM-DD`, для впорядкування і відображення у проекції.
 - **Heading H1** — перший `#`-заголовок, як назва рішення.
 - **Розділи MADR** — `## Context and Problem Statement`, `## Considered Options`, `## Decision Outcome`, `### Consequences`, `## More Information`. Для проекції зазвичай беруться Decision Outcome + Consequences.
-- **`## Update YYYY-MM-DD`** — apended-секції у тому ж файлі. Враховуються як еволюція рішення в хронологічному порядку.
+- **`## Update YYYY-MM-DD`** — appended-секції у тому ж файлі. Враховуються як еволюція рішення в хронологічному порядку.
 
 **Маршрутизація ADR → зони** робиться двома способами:
 
@@ -108,7 +108,7 @@ docs/
 
 ## Гібрид manual + autogen
 
-Реальні проєкти мають legacy docs, написані до появи ADR. Розв'язок — **зони** через HTML-коментарі (виживають у Markdown, не рендеряться у MkDocs):
+Реальні проєкти мають legacy docs, написані до появи ADR. Розв'язок — **зони** через HTML-коментарі (виживають у Markdown, не рендеряться у жодному MD viewer — ні в Zed built-in preview, ні на GitHub, ні в будь-якому майбутньому site-generator-і):
 
 ```markdown
 # User Service
@@ -191,61 +191,86 @@ User Service відповідає за автентифікацію та про�
 - **Incremental**: LLM отримує поточний doc + новий ADR (або `## Update`) — видає diff. Дешевше, але дрейф накопичується.
 - **Компроміс**: incremental + періодичний full rebuild (раз на місяць або після N нових ADR).
 
-## MkDocs Material: collapsible engineer-блоки
+## Viewer/editor: Zed + marksman LSP
 
-Менеджер читає прозу зверху, інженер клікає `??? engineer` і провалюється глибше. Один документ — дві аудиторії без дублювання.
+Окремого site-generator-а **немає** — каталог `docs/` сам є інтерфейсом читання. Інженер відкриває `.md`-файл у Zed і одразу бачить рендер через built-in preview (`cmd+shift+m`). Між сторінками рухається через **`marksman`** LSP: `cmd+click` по `[link](file.md)` і `[[wiki-link]]`, автокомпліт заголовків, find-references, refactor-перейменування заголовків з оновленням посилань у всьому `docs/`.
 
-`mkdocs.yml`:
+`~/.config/zed/settings.json`:
 
-```yaml
-theme:
-  name: material
-  features:
-    - content.code.copy
-    - navigation.tabs
-
-markdown_extensions:
-  - admonition
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.tabbed: { alternate_style: true }
-  - attr_list
-
-extra_css:
-  - stylesheets/audience.css
+```json
+{
+  "languages": {
+    "Markdown": {
+      "language_servers": ["marksman"],
+      "soft_wrap": "editor_width"
+    }
+  }
+}
 ```
 
-Синтаксис у документах:
+**`.marksman.toml`** у корені проєкту авто-створюється правилом ci4 при першому `npx @nitra/cursor fix ci4` із canonical baseline ([data/marksman_config/marksman.baseline.toml](./js/data/marksman_config/marksman.baseline.toml)). Ключові опції — `markdown.glfm = true` (потрібен для GFM-alerts/таблиць/todo з portable subset), `[completion] wiki.style = "file-stem"` (ADR slug == ім'я файла, стабільний ідентифікатор у AUTOGEN `sources`/manifest/валідаторі — заголовок змінюється, посилання не ламається), `[code_action] toc.enable = true` (TOC code action для довгих arc42-сторінок). Без явного конфіга marksman використовує `title-slug-ref` і вимкнений GLFM — частина задокументованої навігації працювала б інакше. Ручні правки конфіга не перетираються — `ensureBaselineFile` ідемпотентний.
+
+**VSCode-альтернатива.** Контрибʼютори, що працюють у VSCode/Cursor замість Zed, отримують той самий шар навігації через офіційне розширення marksman LSP. Канонічний запис у `.vscode/extensions.json`:
+
+```json title=".vscode/extensions.json"
+{
+  "recommendations": ["arr.marksman"]
+}
+```
+
+Канон `recommendations` (substring requirement): `extensions.json`:
+
+```json
+{
+  "recommendations": ["arr.marksman"]
+}
+```. Інші marksman-сумісні редактори (Neovim, Helix, Emacs) налаштовують `marksman` як LSP-сервер за документацією свого редактора — поведінка ідентична (cmd+click по `[link](file.md)`/`[[wiki-link]]`, find-references, refactor-перейменування).
+
+**Portable-only синтаксис.** Усе, що пишемо в `docs/`, обмежене **CommonMark + GFM + Mermaid у fenced code (` ```mermaid `) + KaTeX (`$...$`) + нативний HTML5 `<details>`**. Заборонено:
+
+- pymdownx admonitions (`!!! note`, `??? engineer`, `=== "tab"`)
+- VitePress containers (`::: tip`, `::: details`)
+- MDX/Astro-компоненти (`<MyComponent />`)
+- Hugo shortcodes (`{{< youtube id >}}`)
+- AsciiDoc-вкраплення, RST-директиви
+
+Усе вище не рендериться у Zed built-in preview і ламає головний принцип: **«відкрив файл = побачив фінальний вигляд»**. Обмеження **forward-compatible**: portable subset рендериться у GitHub, MkDocs, VitePress, Antora — підключення збирача в майбутньому не потребує переписування контенту.
+
+## Collapsible-блоки для змішаної аудиторії
+
+Менеджер читає прозу зверху, інженер розгортає деталі. Реалізація — нативний HTML5 `<details>` / `<summary>`, що рендериться **скрізь**: Zed preview, GitHub, будь-який майбутній збирач. Жодних розширень парсера не треба.
 
 ```markdown
 User Service автентифікує користувачів і керує профілями.
 Підтримуємо OIDC-логін та email/password.
 
-??? engineer "Технічна реалізація автентифікації"
-    OIDC-сервер на Fastify з PKCE flow [oidc-pkce-flow].
-    Refresh-токени з rotation, TTL 30 днів, Redis storage.
+<details>
+<summary><strong>Engineer:</strong> Технічна реалізація автентифікації</summary>
+
+OIDC-сервер на Fastify з PKCE flow [oidc-pkce-flow].
+Refresh-токени з rotation, TTL 30 днів, Redis storage.
+
+</details>
 
 Профілі зберігаються в основній БД, кешуються в Redis на 5 хв.
 
-??? ops "Деталі кешу та інвалідації"
-    Cache key: `user:profile:{userId}:v2`.
-    Інвалідація — NATS подія `user.profile.updated` [user-profile-events].
+<details>
+<summary><strong>Ops:</strong> Деталі кешу та інвалідації</summary>
+
+Cache key: `user:profile:{userId}:v2`.
+Інвалідація — NATS подія `user.profile.updated` [user-profile-events].
+
+</details>
 ```
 
-`???` = згорнуто за замовчуванням, `???+` = розгорнуто.
+**Конвенція маркера у `<summary>`:** перше слово — аудиторія з фіксованого словника (`Engineer:`, `Ops:`, `Security:`, `Manager:`), далі — описова назва. Це дає валідатору детермінований regex для перевірок типу «жоден `Engineer:`-блок не з'являється в manager-only проекціях».
 
-Кастомні audience-styles у `docs/stylesheets/audience.css`:
+**Технічні нюанси `<details>`:**
 
-```css
-.md-typeset details.engineer > summary {
-  background-color: rgba(84, 110, 122, 0.1);
-  border-color: #546e7a;
-}
-.md-typeset details.ops > summary {
-  background-color: rgba(255, 152, 0, 0.1);
-  border-color: #ff9800;
-}
-```
+- порожній рядок до `<details>` і після `<summary>` обов'язковий — інакше Markdown-парсер не активує блочний рендер усередині
+- за замовчуванням блок згорнутий; `<details open>` — розгорнутий
+- візуальна типізація аудиторій робиться **через текст `<summary>`**, не через CSS — у Zed preview кастомні стилі недоступні
+- `<details>` ≠ HTML-обгортка з правила «жодних `<div>`/`<span>`»: це **семантичний** HTML5-елемент, а не презентаційний; його token-cost мізерний
 
 ## Промпт для LLM-проекцій
 
@@ -259,32 +284,46 @@ User Service автентифікує користувачів і керує п�
    як пов'язано з іншими частинами продукту. Без технологій, версій, коду.
 
 2. Технічні деталі — тільки всередині блоків:
-   ??? engineer "Описова назва блоку"
-       Код, конфіги, версії, посилання на ADR.
+   <details>
+   <summary><strong>Engineer:</strong> Описова назва блоку</summary>
+
+   Код, конфіги, версії, посилання на ADR.
+
+   </details>
 
 3. Operational деталі:
-   ??? ops "Що моніторити та як реагувати"
+   <details>
+   <summary><strong>Ops:</strong> Що моніторити та як реагувати</summary>
+
+   Метрики, алерти, runbook-кроки.
+
+   </details>
 
 Правила:
-- Якщо прибрати всі ??? блоки, текст лишається зв'язним менеджерським документом.
-- Кожен факт з ADR маркуй [<slug>] всередині engineer-блоку — slug це ім'я clean ADR
+- Якщо прибрати всі <details>-блоки, текст лишається зв'язним менеджерським документом.
+- Перше слово у <summary> — аудиторія з фіксованого словника
+  (Engineer:/Ops:/Security:/Manager:), далі — описова назва
+  (наприклад «<strong>Engineer:</strong> Чому Percona, а не MariaDB»).
+- Порожній рядок до і після вмісту <details> обов'язковий.
+- Кожен факт з ADR маркуй [<slug>] всередині <details>-блоку — slug це ім'я clean ADR
   без розширення (наприклад `[ланцюжок-запуску-abie]`).
-- Назви блоків — описові («Чому Percona, а не MariaDB»).
 - НЕ виходь за межі <!-- AUTOGEN:start --> ... <!-- AUTOGEN:end -->.
 - ADR без рядка `**Status:** Accepted` ігноруй.
 - Якщо в ADR є `## Update YYYY-MM-DD` секції — враховуй найсвіжіший стан рішення,
   старі формулювання вважай застарілими.
+- Заборонені framework-specific synaxes: !!! note, ??? engineer, ::: tip,
+  MDX-компоненти, Hugo shortcodes — тільки CommonMark + GFM + Mermaid + <details>.
 ```
 
 ## Типові поломки LLM і захист
 
-| Проблема                     | Захист                                                                            |
-| ---------------------------- | --------------------------------------------------------------------------------- |
+| Проблема                     | Захист                                                                                    |
+| ---------------------------- | ----------------------------------------------------------------------------------------- |
 | Галюцинація деталей          | Правило `[<slug>]` маркера + post-gen linter, що перевіряє існування `docs/adr/<slug>.md` |
-| Втрата `## Update`-еволюції  | Pre-process: збирати всі `## Update YYYY-MM-DD` у ADR, передавати у промпт як патчі |
-| Дрейф термінології           | `docs/glossary.md` як перший вхід у кожен промпт                                  |
-| Перенасичення контексту      | Двостадійна генерація: спочатку summary кожного ADR (кеш), потім проекція         |
-| Inconsistency між проекціями | Cross-projection validator порівнює факти між документами                         |
+| Втрата `## Update`-еволюції  | Pre-process: збирати всі `## Update YYYY-MM-DD` у ADR, передавати у промпт як патчі       |
+| Дрейф термінології           | `docs/glossary.md` як перший вхід у кожен промпт                                          |
+| Перенасичення контексту      | Двостадійна генерація: спочатку summary кожного ADR (кеш), потім проекція                 |
+| Inconsistency між проекціями | Cross-projection validator порівнює факти між документами                                 |
 
 ## Валідатор (обов'язково)
 
@@ -293,7 +332,10 @@ User Service автентифікує користувачів і керує п�
 - Усі `[<slug>]` посилання вказують на існуючі файли `docs/adr/<slug>.md` із рядком `**Status:** Accepted`
 - Усі `AUTOGEN:start` мають парний `AUTOGEN:end` з тим самим `id`
 - Hash у `manifest.json` відповідає фактичному контенту зон
-- Жоден `??? engineer` блок не з'являється в manager-only проекціях
+- Жоден `<details>`-блок з `<summary>` що починається на `Engineer:` / `Ops:` / `Security:` не з'являється в manager-only проекціях
+- Кожен `<details>` має оточуючі порожні рядки (інакше `<summary>`-вміст рендериться як plain HTML, не collapsible)
+- У `docs/` немає заборонених framework-specific конструкцій: `!!! note`, `??? `, `::: tip`, `::: details`, MDX-теги `<[A-Z][a-zA-Z]*`, Hugo shortcodes `{{< `
+- Усі inter-doc посилання працюють для `marksman` LSP (відносні шляхи `[text](./other.md)` або `[[wiki-link]]`, не absolute URLs усередині `docs/`)
 - Якщо в зоні згадано компонент — він є в `docs/glossary.md`
 - ADR без `**Status:** Accepted` не потрапили у проекцію
 
@@ -317,15 +359,24 @@ ADR (`docs/adr/<slug>.md`) — джерело правди для autogen-про
 
 ## Зв'язок із документацією
 
-Архітектурні артефакти — частина **користувацької документації**, а не закритий артефакт для команди. Контекстна діаграма (C4 рівень 1) і контейнерна (рівень 2) живуть там, де читач шукає вступ у проєкт — у `explanation/architecture.md`, не у відокремленій теці «for-architects». MkDocs Material рендерить це з collapsible-блоками, тому менеджер бачить прозу, інженер провалюється в деталі.
+Архітектурні артефакти — частина **користувацької документації**, а не закритий артефакт для команди. Контекстна діаграма (C4 рівень 1) і контейнерна (рівень 2) живуть там, де читач шукає вступ у проєкт — у `explanation/architecture.md`, не у відокремленій теці «for-architects». Нативний `<details>`-блок дає collapsible-вигляд у будь-якому MD-viewer (Zed built-in preview, GitHub web UI, потенційний майбутній site-generator) без залежності від конкретного фреймворку — менеджер бачить прозу, інженер розгортає деталі.
+
+## Зв'язок із `.cursor/rules`
+
+`.cursor/rules/*.mdc` — джерело правди для **операційних правил** проєкту: як запускати лінт і тести, як оформлювати CHANGELOG, як версіонувати модулі, які прапорці передавати інструментам тощо. Архітектурна документація у `docs/` **не дублює** ці правила і не переказує їх своїми словами. Дублікат миттєво розходиться з оригіналом, ламає механіку automatic-перевірок (`npx @nitra/cursor fix`/`check`) і вимагає двох правок при кожній зміні — одна з них неминуче пропускається.
+
+Замість дублювання — **відсилка** на конкретне правило через його ім'я у бектиках: «див. правило **`changelog`**», «див. **`n-lint`**», «деталі формату — у правилі **`adr`**». Відсилка веде читача (людину чи LLM-агента) до єдиного джерела істини; коли правило еволюціонує, документація лишається коректною без правки. Якщо `.cursor/rule` потребує доповнення або уточнення — оновлюй сам `.mdc`, а не копіюй його зміст у `docs/`.
 
 ## Інструменти
 
 - **Claude Code** як runner — slash-команда `/regen-docs` або post-commit hook на зміни `docs/adr/**`
 - **capture-decisions.sh** + **normalize-decisions.sh** — Stop-hooks створення ADR (керує правило `adr`)
 - **gray-matter** на Bun — лише для парсингу draft frontmatter; clean ADR парситься regexp по `**Status:**` / `**Date:**`
-- **MkDocs + Material** як viewer
-- **Mermaid** для C4-діаграм, EventModeling, Context Maps у проекціях
+- **Zed** як viewer/editor — built-in MD preview (`cmd+shift+m`) рендерить кожен файл без site-generator-а; `<details>` для collapsible-блоків
+- **marksman** LSP як шар навігації — `cmd+click` по `[text](file.md)`/`[[wiki-link]]`, find-references, refactor-перейменування заголовків
+- **Mermaid** для C4-діаграм, EventModeling, Context Maps — рендериться у Zed preview напряму з ` ```mermaid ` fenced code, без розширень
+- **KaTeX** (опційно) — інлайн-математика `$...$` для метрик/формул; рендериться у Zed preview
+- Site-generator (MkDocs Material / VitePress / Antora) — **не використовується**; portable subset гарантує, що його можна підключити пізніше без переписування контенту
 
 ## Query mode як бонус
 

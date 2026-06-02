@@ -1,7 +1,7 @@
 ---
 description: Автоматичний збір ADR/Runbook/Knowledge-чернеток і батч-нормалізація у `docs/adr/` через Stop-хуки Claude Code та Cursor Agent
 alwaysApply: true
-version: '2.0'
+version: '2.2'
 ---
 
 ## MADR v4 і дві фази
@@ -19,7 +19,7 @@ ADR живуть у єдиному каталозі **`docs/adr/`**. Clean ADR-�
 Є два стани файлу, які відрізняються YAML frontmatter:
 
 - **Draft** — файл з frontmatter `session: …`, `captured: …`, `transcript: …` та timestamp-іменем `YYYYMMDD-HHMMSS-<sid>.md`. Пише `capture-decisions.sh` після кожної сесії.
-- **Clean** — файл без frontmatter, з kebab-case-іменем `<slug>.md` (наприклад `ланцюжок-запуску-abie.md`). Створює `normalize-decisions.sh` або людина руками.
+- **Clean** — файл без frontmatter, з kebab-case-іменем. `normalize-decisions.sh` зберігає timestamp-префікс чернетки → `YYYYMMDD-HHMMSS-<slug>.md` (наприклад `20260518-092807-ланцюжок-запуску-abie.md`); створений руками clean-файл може мати просто `<slug>.md`.
 
 `normalize-decisions.sh` ніколи не чіпає clean-файли — крім випадку `merge-into`, коли дописує `## Update YYYY-MM-DD` в кінець наявного clean-файлу.
 
@@ -28,6 +28,8 @@ ADR живуть у єдиному каталозі **`docs/adr/`**. Clean ADR-�
 Stop-hook `capture-decisions.sh` зчитує JSONL-транскрипт сесії (через `jq`), витягає текст, `thinking`-блоки та назви `tool_use`-викликів, передає компактний дайджест у LLM CLI з evidence-bound промптом і записує результат у **`docs/adr/<timestamp>-<session>.md`**, якщо модель повернула MADR-блок з шапкою `## ADR …`. Якщо модель повернула `NONE` (тривіальна сесія) — нічого не пишеться. Рекурсію з внутрішнього виклику моделі блокує env-var `CAPTURE_DECISIONS_RUNNING=1`.
 
 Для Cursor payload скрипт бере `transcript_path`, `conversation_id` / `generation_id` і `workspace_roots[0]`; для Claude Code — `transcript_path`, `session_id` і `CLAUDE_PROJECT_DIR`.
+
+**Tooling-only skip:** перед викликом LLM `capture-decisions.sh` дивиться у transcript на `tool_use`-правки (`Edit`/`Write`/`MultiEdit`). Якщо всі змінені файли потрапляють у вузький allowlist — `.cspell.json`, `docs/adr/*.md`, `CHANGELOG.md`, кореневі `AGENTS.md`/`CLAUDE.md`, або `package.json` з diff виключно по ключу `version` — хук виходить з `exit 0` без LLM-виклику. Це розриває петлю «`/n-lint` править `.cspell.json` → з'являється новий ADR-draft → наступний `/n-lint` знов псує правопис у цьому draft». Поведінку вимикає `ADR_NORMALIZE_SKIP_TOOLING_ONLY=0`.
 
 ### Фаза 2 — Normalize
 
@@ -38,16 +40,17 @@ Stop-hook `normalize-decisions.sh` спрацьовує на тому самом
 - Бере не більше **`ADR_NORMALIZE_BATCH`** чернеток (default 10, найстарші за іменем-timestamp), формує один промпт LLM і чекає JSON-відповідь зі списком операцій.
 - Виходить миттєво, якщо репозиторій у стані `MERGE_HEAD` / `rebase-*` — небезпечно правити файли посеред конфлікту.
 - Виходить миттєво, якщо інший normalize-запуск тримає `flock` на `.claude/hooks/.normalize.lock` (тільки де `flock` доступний).
+- Перед викликом LLM для кожної чернетки batch'а читає `transcript:` із frontmatter і той самий tool_use-список. Чернетки tooling-only — видаляє без виклику LLM. Якщо після фільтра batch порожній — `exit 0`.
 
 LLM повертає масив операцій:
 
 | `op` | Семантика | Поля |
 | --- | --- | --- |
 | `delete` | Чернетка тривіальна / повністю покрита іншим clean-ADR-ом. | `file`, `reason` |
-| `rewrite` | Чернетка стає окремим clean-файлом MADR v4 minimal: frontmatter знімається, ім'я → `<slug>.md`, додаються `**Status:** Accepted`, `**Date:**` з `captured` і canonical MADR headings. | `file`, `slug`, `content` |
+| `rewrite` | Чернетка стає окремим clean-файлом MADR v4 minimal: frontmatter знімається, ім'я → `<timestamp>-<slug>.md` (timestamp-префікс чернетки збережено), додаються `**Status:** Accepted`, `**Date:**` з `captured` і canonical MADR headings. | `file`, `slug`, `content` |
 | `merge-into` | Чернетка повторює тему вже існуючого clean-файлу; дописуємо `## Update YYYY-MM-DD` у кінець `target`. | `file`, `target`, `additions` |
 
-`slug` — kebab-case українською (`ланцюжок-запуску-abie`, `npm-publish-flow`); англійські технічні терміни лишаються англійською без транслітерації. Колізія slug-ів обробляється детермінованим суфіксом `-2`, `-3`.
+`slug` — kebab-case українською (`ланцюжок-запуску-abie`, `npm-publish-flow`); англійські технічні терміни лишаються англійською без транслітерації. До імені clean-файлу скрипт додає `YYYYMMDD-HHMMSS-` чернетки, тож запис лишається прив'язаним до часу capture, а `docs/adr/` сортується хронологічно. Колізія імен обробляється детермінованим суфіксом `-2`, `-3`.
 
 ### Жодних git-операцій
 
@@ -65,6 +68,7 @@ LLM повертає масив операцій:
 | `ADR_NORMALIZE_DRY` | `0` | `1` — лише лог запланованих операцій, без змін на диску. |
 | `ADR_NORMALIZE_MODEL` | `sonnet` | Модель для `claude -p`. |
 | `ADR_NORMALIZE_CURSOR_MODEL` | `claude-4.6-sonnet-medium` | Модель для `cursor-agent -p`. |
+| `ADR_NORMALIZE_SKIP_TOOLING_ONLY` | `1` | `0` — вимкнути structural skip tooling-only сесій (старий behavior). |
 
 Для ручного запуску (поза порогом і поза Stop-хуком) є **`/n-adr-normalize`** — slash-команда тимчасово виставляє `ADR_NORMALIZE_THRESHOLD=0` і `ADR_NORMALIZE_MIN_INTERVAL_HOURS=0` та викликає скрипт напряму.
 
@@ -82,8 +86,8 @@ LLM повертає масив операцій:
 
 ```text
 docs/adr/
-├── YYYYMMDD-HHMMSS-<sid>.md   # drafts (frontmatter session:/captured:/transcript:)
-└── <slug>.md                  # clean ADR-и (без frontmatter)
+├── YYYYMMDD-HHMMSS-<sid>.md     # drafts (frontmatter session:/captured:/transcript:)
+└── YYYYMMDD-HHMMSS-<slug>.md    # clean ADR-и (без frontmatter, timestamp-префікс чернетки збережено)
 .claude/hooks/
 ├── capture-decisions.sh       # auto-synced з пакета
 ├── normalize-decisions.sh     # auto-synced з пакета
@@ -95,26 +99,16 @@ docs/adr/
 └── hooks.json                 # Cursor Agent stop-hooks для тих самих скриптів
 ```
 
-`.gitignore` повинен містити рядки, що покривають **`.claude/hooks/*.log`** і службові файли normalize (`.claude/hooks/.normalize-*`).
+`.gitignore` у корені проєкту повинен містити базові рядки (`node_modules/`, `dist/`, `*.secret`) і патерни для ADR Stop-hook (**`.claude/hooks/*.log`**, `.claude/hooks/.normalize-state`, `.claude/hooks/.normalize.lock`). Канонічний фрагмент (дописується `npx @nitra/cursor`, коли правило `adr` увімкнене): [.gitignore.snippet](./js/templates/hooks/.gitignore.snippet).
 
 ## Stop-hook у `.claude/settings.json`
 
-Канонічний запис, який вставляє sync (поряд із lint stop-hook):
+Канонічний запис, який вставляє sync (поряд із PostToolUse fix-хуком — той живе в іншій події, тут не показаний):
 
 ```json title=".claude/settings.json"
 {
   "hooks": {
     "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "npx --no @nitra/cursor stop-hook",
-            "timeout": 60
-          }
-        ]
-      },
       {
         "matcher": "",
         "hooks": [
@@ -142,7 +136,7 @@ docs/adr/
 }
 ```
 
-Усі три групи ідентифікуються пакетом за маркером у `command` (`@nitra/cursor stop-hook`, `.claude/hooks/capture-decisions.sh`, `.claude/hooks/normalize-decisions.sh`) — користувацькі hook-групи поряд не чіпаються. Якщо `adr` прибрати з `rules`, обидві ADR-групи автоматично видаляються на наступному `npx @nitra/cursor`.
+Обидві ADR-групи ідентифікуються пакетом за маркером у `command` (`.claude/hooks/capture-decisions.sh`, `.claude/hooks/normalize-decisions.sh`) — користувацькі hook-групи поряд не чіпаються. Якщо `adr` прибрати з `rules`, обидві ADR-групи автоматично видаляються на наступному `npx @nitra/cursor`.
 
 ## Stop-hook у `.cursor/hooks.json`
 
