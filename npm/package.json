@@ -1,6 +1,6 @@
 {
   "name": "@nitra/ci-shared",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Nitra CI tooling: sync GraphQL schema to a docs npm package (and more to come).",
   "homepage": "https://github.com/nitra/ci-shared",
   "bugs": {
