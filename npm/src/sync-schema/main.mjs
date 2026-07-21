@@ -2,8 +2,12 @@ import { readFileSync, writeFileSync, existsSync, appendFileSync, mkdirSync } fr
 import { dirname } from 'node:path'
 import { env } from 'node:process'
 import { parseArgs } from 'node:util'
+// TODO(graphql@17): прямі API (buildSchema/buildClientSchema/printSchema/getIntrospectionQuery)
+// сумісні з v17 (https://www.graphql-js.org/upgrade-guides/v16-v17/), але `@graphql-inspector/core@7`
+// peerDeps лише ^14–^16 — з graphql@17 bun ставить вкладений graphql@16 і `diff` падає
+// «another module or realm». Піднімати graphql до 17 лише після peer-підтримки inspector.
 import { buildSchema, buildClientSchema, printSchema, getIntrospectionQuery } from 'graphql'
-import { diff } from '@graphql-inspector/core'
+import { DiffRule, diff } from '@graphql-inspector/core'
 import { sqlToDbml } from './er.mjs'
 
 const RE_SQL_EXT = /\.sql$/
@@ -128,6 +132,8 @@ export function prependChangelog(existing, newBlock) {
 
 /**
  * Запускає graphql-inspector diff між двома SDL.
+ * `DiffRule.simplifyChanges` — як у @graphql-inspector/core@7: без вкладених змін
+ * при додаванні нового вузла (див. CHANGELOG major 7.0.0 / #2893).
  * @param {string} oldSdl стара GraphQL-схема (SDL)
  * @param {string} newSdl нова GraphQL-схема (SDL)
  * @returns {Promise<Array<{type: string, message: string, criticality: {level: string}}>>} список змін
@@ -135,7 +141,7 @@ export function prependChangelog(existing, newBlock) {
 export async function runInspector(oldSdl, newSdl) {
   const oldSchema = buildSchema(oldSdl)
   const newSchema = buildSchema(newSdl)
-  return await diff(oldSchema, newSchema)
+  return await diff(oldSchema, newSchema, [DiffRule.simplifyChanges])
 }
 
 /**
